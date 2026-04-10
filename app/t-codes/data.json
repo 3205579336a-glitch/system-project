@@ -1,0 +1,862 @@
+[
+  {
+    "id": 1,
+    "code": "ZMFM050061",
+    "desc": "Approve RFA (审批 RFA)",
+    "module": "Custom Approval",
+    "type": "Action",
+    "roles": ["Manager"],
+    "tip": "管理层用于审批 RFA 的操作入口",
+    "related": [{"code": "ZMFM050060_A", "label": "RFA 准备"}]
+  },
+  {
+    "id": 2,
+    "code": "ZMFM0015",
+    "desc": "Approve PCA (审批 PCA)",
+    "module": "Custom Approval",
+    "type": "Action",
+    "roles": ["Manager"],
+    "tip": "管理层用于审批 PCA 的操作入口",
+    "related": [{"code": "ZMFM0011", "label": "创建 PCA"}, {"code": "ZMFM0014", "label": "PCA 清单"}]
+  },
+  {
+    "id": 3,
+    "code": "ME51N",
+    "desc": "Create PR (创建采购申请)",
+    "module": "Purchasing",
+    "type": "Action",
+    "roles": ["Manager", "Buyer", "PD", "PPD"],
+    "tip": "采购需求提报入口",
+    "related": [{"code": "ME52N", "label": "修改 PR"}, {"code": "ME53N", "label": "显示 PR"}, {"code": "ME55", "label": "审批 PR"}]
+  },
+  {
+    "id": 4,
+    "code": "ME52N",
+    "desc": "Change PR (修改采购申请)",
+    "module": "Purchasing",
+    "type": "Action",
+    "roles": ["Manager", "Buyer", "PD"],
+    "tip": "修改已创建的采购申请信息",
+    "related": [{"code": "ME51N", "label": "创建 PR"}, {"code": "ME53N", "label": "显示 PR"}]
+  },
+  {
+    "id": 5,
+    "code": "ME53N",
+    "desc": "Display PR (显示采购申请)",
+    "module": "Purchasing",
+    "type": "Report",
+    "roles": ["Manager", "Buyer", "PD", "PPD"],
+    "tip": "查看采购申请的详细信息",
+    "related": [{"code": "ME5A", "label": "PR 清单"}]
+  },
+  {
+    "id": 6,
+    "code": "ME55",
+    "desc": "Release PR (审批/下达采购申请)",
+    "module": "Purchasing",
+    "type": "Action",
+    "roles": ["Manager"],
+    "tip": "主管审批采购需求",
+    "related": [{"code": "ME54N", "label": "取消下达 PR"}]
+  },
+  {
+    "id": 7,
+    "code": "ME54N",
+    "desc": "Cancel released PR (取消已审批的采购申请)",
+    "module": "Purchasing",
+    "type": "Action",
+    "roles": ["Manager"],
+    "tip": "撤销 PR 的审批状态",
+    "related": [{"code": "ME55", "label": "审批 PR"}]
+  },
+  {
+    "id": 8,
+    "code": "ME21N",
+    "desc": "Create PO (创建采购订单)",
+    "module": "Purchasing",
+    "type": "Action",
+    "roles": ["Manager", "Buyer", "PD"],
+    "tip": "将 PR 转化为 PO 或直接创建 PO",
+    "related": [{"code": "ME22N", "label": "修改 PO"}, {"code": "ME23N", "label": "显示 PO"}, {"code": "ME29N", "label": "审批 PO"}]
+  },
+  {
+    "id": 9,
+    "code": "ME22N",
+    "desc": "Change PO (修改采购订单)",
+    "module": "Purchasing",
+    "type": "Action",
+    "roles": ["Manager", "Buyer", "PD"],
+    "tip": "更新采购订单数据",
+    "related": [{"code": "ME21N", "label": "创建 PO"}, {"code": "ME23N", "label": "显示 PO"}]
+  },
+  {
+    "id": 10,
+    "code": "ME23N",
+    "desc": "Display PO (显示采购订单)",
+    "module": "Purchasing",
+    "type": "Report",
+    "roles": ["Manager", "Buyer", "PD"],
+    "tip": "查看采购订单详情",
+    "related": [{"code": "ME2N", "label": "按 PO 号查订单"}, {"code": "ME2L", "label": "按供应商查订单"}]
+  },
+  {
+    "id": 11,
+    "code": "ME29N",
+    "desc": "Release PO (审批/下达采购订单)",
+    "module": "Purchasing",
+    "type": "Action",
+    "roles": ["Manager"],
+    "tip": "对生成的采购订单进行放行",
+    "related": [{"code": "ME23N", "label": "显示 PO"}]
+  },
+  {
+    "id": 12,
+    "code": "MIGO",
+    "desc": "Goods Movement (GR) (货物移动/收货)",
+    "module": "Inventory",
+    "type": "Action",
+    "roles": ["Manager"],
+    "tip": "物料的收发货及转移操作",
+    "related": [{"code": "MB51", "label": "物料凭证清单"}]
+  },
+  {
+    "id": 13,
+    "code": "PR04",
+    "desc": "Edit Weekly Reports (编辑周报/费用报销)",
+    "module": "Finance/HR",
+    "type": "Action",
+    "roles": ["Manager", "Buyer", "SD", "PD"],
+    "tip": "维护人员周报及报销数据",
+    "related": [{"code": "ZFFMPRAP", "label": "报销审批"}]
+  },
+  {
+    "id": 14,
+    "code": "ZFFMPRAP",
+    "desc": "Expense Claim Approval (费用报销审批)",
+    "module": "Finance/HR",
+    "type": "Action",
+    "roles": ["Manager"],
+    "tip": "管理层审批费用报销单",
+    "related": [{"code": "PR04", "label": "编辑周报"}]
+  },
+  {
+    "id": 15,
+    "code": "BP",
+    "desc": "Display/Maintain vendor master (显示/维护供应商主数据)",
+    "module": "Master Data",
+    "type": "Action",
+    "roles": ["Buyer", "PD"],
+    "tip": "业务合作伙伴与供应商核心信息管理",
+    "related": [{"code": "MKVZ", "label": "采购供应商清单"}, {"code": "XK99", "label": "批量维护供应商"}]
+  },
+  {
+    "id": 16,
+    "code": "ZMFMVMADD",
+    "desc": "Display/Maintain Vendor Purchase org. detail (维护供应商采购组织明细)",
+    "module": "Master Data",
+    "type": "Action",
+    "roles": ["Buyer", "PD"],
+    "tip": "补充维护供应商在特定采购组织下的数据",
+    "related": [{"code": "BP", "label": "供应商主数据"}]
+  },
+  {
+    "id": 17,
+    "code": "ZMFMHOST",
+    "desc": "Supplier Host for Vendor (维护供应商主机厂信息)",
+    "module": "Master Data",
+    "type": "Action",
+    "roles": ["Buyer", "PD"],
+    "tip": "关联供应商与对应主机厂",
+    "related": [{"code": "ZMFMB0280", "label": "批量上传供应商主机厂数据"}]
+  },
+  {
+    "id": 18,
+    "code": "MKVZ",
+    "desc": "List of Vendors: Purchasing (采购供应商清单)",
+    "module": "Master Data",
+    "type": "Report",
+    "roles": ["Buyer", "PD"],
+    "tip": "批量查看采购供应商的简略信息",
+    "related": [{"code": "BP", "label": "显示供应商主数据"}]
+  },
+  {
+    "id": 19,
+    "code": "MM03",
+    "desc": "Display Material (显示物料)",
+    "module": "Master Data",
+    "type": "Report",
+    "roles": ["Buyer", "PD"],
+    "tip": "查询物料主数据详细视图",
+    "related": [{"code": "MM01", "label": "创建物料"}, {"code": "MM02", "label": "修改物料/商品代码"}]
+  },
+  {
+    "id": 20,
+    "code": "MM02",
+    "desc": "Maintain Commodity Code (维护商品代码)",
+    "module": "Master Data",
+    "type": "Action",
+    "roles": ["Buyer", "PD"],
+    "tip": "维护物料的分类代码",
+    "related": [{"code": "YMFMCOMMODITY", "label": "定制化商品代码维护"}]
+  },
+  {
+    "id": 21,
+    "code": "ZMFM050071",
+    "desc": "Project Maintenance (项目维护)",
+    "module": "Project Control",
+    "type": "Action",
+    "roles": ["PPD", "Buyer", "PD"],
+    "tip": "定义及维护项目主参数",
+    "related": [{"code": "ZMFMB2010", "label": "项目控制"}, {"code": "ZMFM050072", "label": "新零件清单 NPL"}]
+  },
+  {
+    "id": 22,
+    "code": "ZMFM050072",
+    "desc": "NPL (新零件清单)",
+    "module": "Project Control",
+    "type": "Action",
+    "roles": ["PPD", "Buyer", "PD"],
+    "tip": "管理项目中导入的新物料清单",
+    "related": [{"code": "ZMFM050071", "label": "项目维护"}]
+  },
+  {
+    "id": 23,
+    "code": "ZMFM050012",
+    "desc": "Target Cost (目标成本)",
+    "module": "Project Control",
+    "type": "Action",
+    "roles": ["PPD", "Buyer", "PD"],
+    "tip": "维护和追踪零件的目标成本",
+    "related": [{"code": "ZMFMB2010", "label": "项目控制"}]
+  },
+  {
+    "id": 24,
+    "code": "ZMFMB2010",
+    "desc": "Project Control (项目控制/MPP)",
+    "module": "Project Control",
+    "type": "Action",
+    "roles": ["PPD", "Buyer", "PD"],
+    "tip": "新项目及量产前期综合控制平台",
+    "related": [{"code": "ZMFM050071", "label": "项目维护"}]
+  },
+  {
+    "id": 25,
+    "code": "ZMFM050010",
+    "desc": "Stand-alone APQP / Buyer Receipt (独立 APQP / 买方接收)",
+    "module": "Quality",
+    "type": "Action",
+    "roles": ["SD", "Buyer", "PD"],
+    "tip": "先期产品质量策划数据单条录入与买方接收确认",
+    "related": [{"code": "ZMFM050015", "label": "批量上传 APQP/买方接收"}, {"code": "ZMFM050035", "label": "APQP 清单"}]
+  },
+  {
+    "id": 26,
+    "code": "ZMFM050015",
+    "desc": "Mass upload stand-alone APQP / Mass upload Buyer Receipt (批量上传 APQP/买方接收)",
+    "module": "Quality",
+    "type": "Action",
+    "roles": ["SD", "Buyer"],
+    "tip": "通过文件批量导入先期质量及买方接收数据",
+    "related": [{"code": "ZMFM050010", "label": "单条 APQP/接收"}]
+  },
+  {
+    "id": 27,
+    "code": "ZMFM050040",
+    "desc": "RFQ Creation by vendor (供应商创建 RFQ)",
+    "module": "Sourcing",
+    "type": "Action",
+    "roles": ["Buyer", "PD"],
+    "tip": "记录供应商提交的报价请求数据",
+    "related": [{"code": "ZMFM050041", "label": "显示/修改 RFQ"}, {"code": "ZMFM050060", "label": "RFQ 请求与显示"}]
+  },
+  {
+    "id": 28,
+    "code": "ZMFM050041",
+    "desc": "Display/Change RFQ (显示/修改 RFQ)",
+    "module": "Sourcing",
+    "type": "Action",
+    "roles": ["Buyer", "PD"],
+    "tip": "查看或更新已有报价请求(RFQ)",
+    "related": [{"code": "ZMFM050040", "label": "创建 RFQ"}]
+  },
+  {
+    "id": 29,
+    "code": "ZMFM050060",
+    "desc": "RFQ Request & Display (RFQ 请求与显示)",
+    "module": "Sourcing",
+    "type": "Action",
+    "roles": ["Buyer", "PD"],
+    "tip": "发起询报价并监控状态",
+    "related": [{"code": "ZMFM050060_A", "label": "RFA 准备"}]
+  },
+  {
+    "id": 30,
+    "code": "ZMFM050060_A",
+    "desc": "RFA Preparations (RFA 准备)",
+    "module": "Sourcing",
+    "type": "Action",
+    "roles": ["Buyer", "PD"],
+    "tip": "报价分析(RFA)提交流程前置准备",
+    "related": [{"code": "ZMFM050061", "label": "审批 RFA"}]
+  },
+  {
+    "id": 31,
+    "code": "ZMFM050063",
+    "desc": "Copy RFQ (复制 RFQ)",
+    "module": "Sourcing",
+    "type": "Action",
+    "roles": ["Buyer", "PD"],
+    "tip": "快速参考历史 RFQ 创建新询价",
+    "related": [{"code": "ZMFM050040", "label": "创建 RFQ"}]
+  },
+  {
+    "id": 32,
+    "code": "ZMFM0011",
+    "desc": "Create PCA (创建 PCA)",
+    "module": "Custom Approval",
+    "type": "Action",
+    "roles": ["Buyer", "PD"],
+    "tip": "发起定制化审批流程",
+    "related": [{"code": "ZMFM0012", "label": "修改 PCA"}, {"code": "ZMFM0015", "label": "审批 PCA"}]
+  },
+  {
+    "id": 33,
+    "code": "ZMFM0012",
+    "desc": "Change PCA (修改 PCA)",
+    "module": "Custom Approval",
+    "type": "Action",
+    "roles": ["Buyer", "PD"],
+    "tip": "编辑未审批的定制化流程单",
+    "related": [{"code": "ZMFM0013", "label": "显示 PCA"}]
+  },
+  {
+    "id": 34,
+    "code": "ZMFM0013",
+    "desc": "Display PCA (显示 PCA)",
+    "module": "Custom Approval",
+    "type": "Report",
+    "roles": ["Buyer", "PD"],
+    "tip": "查看 PCA 表单内容及状态",
+    "related": [{"code": "ZMFM0014", "label": "PCA 清单"}]
+  },
+  {
+    "id": 35,
+    "code": "ZMFM0014",
+    "desc": "PCA List (PCA 清单)",
+    "module": "Custom Approval",
+    "type": "Report",
+    "roles": ["Buyer", "PD"],
+    "tip": "按条件批量查询 PCA 记录",
+    "related": [{"code": "ZMFM0013", "label": "显示 PCA"}]
+  },
+  {
+    "id": 36,
+    "code": "ME11",
+    "desc": "Create Purchasing Info Record (创建采购信息记录)",
+    "module": "Master Data",
+    "type": "Action",
+    "roles": ["Buyer", "PD"],
+    "tip": "建立物料与供应商的价格交货条件",
+    "related": [{"code": "ME12", "label": "修改信息记录"}, {"code": "ME13", "label": "显示信息记录"}]
+  },
+  {
+    "id": 37,
+    "code": "ME12",
+    "desc": "Change Purchasing Info Record (修改采购信息记录)",
+    "module": "Master Data",
+    "type": "Action",
+    "roles": ["Buyer", "PD"],
+    "tip": "更新物料/供应商的采购条件",
+    "related": [{"code": "ME14", "label": "信息记录变更历史"}]
+  },
+  {
+    "id": 38,
+    "code": "ME13",
+    "desc": "Display Purchasing Info Record (显示采购信息记录)",
+    "module": "Master Data",
+    "type": "Report",
+    "roles": ["Buyer", "PD"],
+    "tip": "查看现有信息记录的数据",
+    "related": [{"code": "ME1M", "label": "按物料查信息记录"}]
+  },
+  {
+    "id": 39,
+    "code": "ME14",
+    "desc": "Changes to Purchasing Info Record (采购信息记录变更历史)",
+    "module": "Master Data",
+    "type": "Report",
+    "roles": ["Buyer", "PD"],
+    "tip": "追溯信息记录的修改日志",
+    "related": [{"code": "ZMFMR0180", "label": "定制变更查询"}]
+  },
+  {
+    "id": 40,
+    "code": "ME15",
+    "desc": "Mark Purch. Info Rec. for Deletion (标记删除采购信息记录)",
+    "module": "Master Data",
+    "type": "Action",
+    "roles": ["Buyer", "PD"],
+    "tip": "对不再使用的采购条件打上删除标记",
+    "related": [{"code": "ME12", "label": "修改信息记录"}]
+  },
+  {
+    "id": 41,
+    "code": "ME1M",
+    "desc": "Info Records per Material (按物料查询信息记录)",
+    "module": "Master Data",
+    "type": "Report",
+    "roles": ["Buyer", "PD"],
+    "tip": "列出特定物料关联的所有信息记录",
+    "related": [{"code": "ZMR140", "label": "显示信息记录(定制)"}]
+  },
+  {
+    "id": 42,
+    "code": "ZMR140",
+    "desc": "Display Info Records (显示信息记录-定制表单)",
+    "module": "Master Data",
+    "type": "Report",
+    "roles": ["Buyer", "PD"],
+    "tip": "定制化的采购信息记录批量查询",
+    "related": [{"code": "ME1M", "label": "按物料查询信息记录"}]
+  },
+  {
+    "id": 43,
+    "code": "ZMR039",
+    "desc": "Current of Info record information (当前信息记录概览)",
+    "module": "Master Data",
+    "type": "Report",
+    "roles": ["Buyer", "PD"],
+    "tip": "报表形式查看有效的采购信息记录详情",
+    "related": [{"code": "ME13", "label": "显示信息记录"}]
+  },
+  {
+    "id": 44,
+    "code": "ZMFMR0180",
+    "desc": "Changes to Purchasing Info Record (采购信息记录变更-定制)",
+    "module": "Master Data",
+    "type": "Report",
+    "roles": ["Buyer", "PD"],
+    "tip": "增强版的信息记录变更追溯报表",
+    "related": [{"code": "ME14", "label": "信息记录变更历史"}]
+  },
+  {
+    "id": 45,
+    "code": "ME01",
+    "desc": "Maintain Source List (维护货源清单)",
+    "module": "Master Data",
+    "type": "Action",
+    "roles": ["Buyer", "PD"],
+    "tip": "维护指定物料在某工厂下的合格供应商时间表",
+    "related": [{"code": "ME03", "label": "显示货源清单"}, {"code": "ME04", "label": "变更历史"}]
+  },
+  {
+    "id": 46,
+    "code": "ME03",
+    "desc": "Display Source List (显示货源清单)",
+    "module": "Master Data",
+    "type": "Report",
+    "roles": ["Buyer", "PD"],
+    "tip": "查看特定物料的可用供货源",
+    "related": [{"code": "ME0M", "label": "按物料查货源清单"}]
+  },
+  {
+    "id": 47,
+    "code": "ME04",
+    "desc": "Changes to Source List (货源清单变更历史)",
+    "module": "Master Data",
+    "type": "Report",
+    "roles": ["Buyer", "PD"],
+    "tip": "跟踪货源清单数据的修改记录",
+    "related": [{"code": "ME01", "label": "维护货源清单"}]
+  },
+  {
+    "id": 48,
+    "code": "ME0M",
+    "desc": "Source List for Material (按物料查询货源清单)",
+    "module": "Master Data",
+    "type": "Report",
+    "roles": ["Buyer", "PD"],
+    "tip": "批量输出物料的货源结构",
+    "related": [{"code": "ME03", "label": "显示货源清单"}]
+  },
+  {
+    "id": 49,
+    "code": "ME05",
+    "desc": "Generate Source List (生成货源清单)",
+    "module": "Master Data",
+    "type": "Action",
+    "roles": ["Buyer"],
+    "tip": "根据已有数据自动生成/更新货源清单",
+    "related": [{"code": "ME01", "label": "维护货源清单"}]
+  },
+  {
+    "id": 50,
+    "code": "ZMFM050035",
+    "desc": "APQP List Display (APQP 清单显示)",
+    "module": "Quality",
+    "type": "Report",
+    "roles": ["SD", "PD"],
+    "tip": "查询先期质量策划数据的汇总清单",
+    "related": [{"code": "ZMFM050010", "label": "独立 APQP"}]
+  },
+  {
+    "id": 51,
+    "code": "MEQ1",
+    "desc": "Maintain Quota Arrangement (维护配额协议)",
+    "module": "Sourcing",
+    "type": "Action",
+    "roles": ["Buyer", "PD"],
+    "tip": "设置多个供应商间的采购量分配比例",
+    "related": [{"code": "MEQ7", "label": "删除配额协议"}]
+  },
+  {
+    "id": 52,
+    "code": "MEQ7",
+    "desc": "Delete Quota Arrangement (删除配额协议)",
+    "module": "Sourcing",
+    "type": "Action",
+    "roles": ["Buyer", "PD"],
+    "tip": "清理不再适用的配额数据",
+    "related": [{"code": "MEQ1", "label": "维护配额协议"}]
+  },
+  {
+    "id": 53,
+    "code": "ME31L",
+    "desc": "Create Scheduling Agreement (创建计划协议)",
+    "module": "Purchasing",
+    "type": "Action",
+    "roles": ["Buyer", "PD"],
+    "tip": "与供应商签订长期的交货排程框架协议",
+    "related": [{"code": "ME32L", "label": "修改计划协议"}, {"code": "ME33L", "label": "显示计划协议"}]
+  },
+  {
+    "id": 54,
+    "code": "ME32L",
+    "desc": "Change Scheduling Agreement (修改计划协议)",
+    "module": "Purchasing",
+    "type": "Action",
+    "roles": ["Buyer", "PD"],
+    "tip": "调整框架协议的内容或有效期",
+    "related": [{"code": "MEMASSSA", "label": "批量修改协议"}]
+  },
+  {
+    "id": 55,
+    "code": "ME33L",
+    "desc": "Display Scheduling Agreement (显示计划协议)",
+    "module": "Purchasing",
+    "type": "Report",
+    "roles": ["Buyer", "PD"],
+    "tip": "查看计划协议详情",
+    "related": [{"code": "ME3L", "label": "按供应商查询"}]
+  },
+  {
+    "id": 56,
+    "code": "ME3L",
+    "desc": "Outline Agreements per Vendor (按供应商查询框架协议)",
+    "module": "Purchasing",
+    "type": "Report",
+    "roles": ["Buyer", "PD"],
+    "tip": "列出指定供应商的所有框架协议",
+    "related": [{"code": "ME3M", "label": "按物料查询框架协议"}]
+  },
+  {
+    "id": 57,
+    "code": "ME3M",
+    "desc": "Outline Agreements by Material (按物料查询框架协议)",
+    "module": "Purchasing",
+    "type": "Report",
+    "roles": ["Buyer", "PD"],
+    "tip": "列出涵盖特定物料的所有框架协议",
+    "related": [{"code": "ME3L", "label": "按供应商查询"}]
+  },
+  {
+    "id": 58,
+    "code": "ME5A",
+    "desc": "Purchase Requisitions: List Display (采购申请清单显示)",
+    "module": "Purchasing",
+    "type": "Report",
+    "roles": ["Buyer", "PD"],
+    "tip": "按多种条件筛选和查看采购申请状态",
+    "related": [{"code": "ME53N", "label": "显示 PR"}]
+  },
+  {
+    "id": 59,
+    "code": "ME2N",
+    "desc": "Purchase Orders by PO Number (按采购订单号查询)",
+    "module": "Purchasing",
+    "type": "Report",
+    "roles": ["Buyer", "PD"],
+    "tip": "通过订单号检索 PO 清单",
+    "related": [{"code": "ME2L", "label": "按供应商查询 PO"}]
+  },
+  {
+    "id": 60,
+    "code": "ME2L",
+    "desc": "Purchase Orders by Vendor (按供应商查询采购订单)",
+    "module": "Purchasing",
+    "type": "Report",
+    "roles": ["Buyer", "PD"],
+    "tip": "查看分配给特定供应商的所有订单",
+    "related": [{"code": "ME23N", "label": "显示 PO"}]
+  },
+  {
+    "id": 61,
+    "code": "MD05",
+    "desc": "MRP list (MRP 清单)",
+    "module": "Planning",
+    "type": "Report",
+    "roles": ["Buyer", "PD", "PPD"],
+    "tip": "查询物料需求计划的静态运行结果",
+    "related": [{"code": "YMFMSRL", "label": "库存/需求清单"}, {"code": "ZZPBD09S", "label": "BOM 展开"}]
+  },
+  {
+    "id": 62,
+    "code": "YMFMSRL",
+    "desc": "Stock/requiremnet list (库存/需求清单定制版)",
+    "module": "Planning",
+    "type": "Report",
+    "roles": ["Buyer", "PD", "PPD"],
+    "tip": "动态查看物料当前的供需及库存状况",
+    "related": [{"code": "MD05", "label": "MRP 清单"}]
+  },
+  {
+    "id": 63,
+    "code": "ZZPBD09S",
+    "desc": "BOM explosion for model and assy (模型及组件 BOM 展开)",
+    "module": "Master Data",
+    "type": "Report",
+    "roles": ["PPD"],
+    "tip": "以层级结构展开物料清单(BOM)",
+    "related": [{"code": "MD05", "label": "MRP 清单"}]
+  },
+  {
+    "id": 64,
+    "code": "ZMFM050036",
+    "desc": "APQP PSW file copy (APQP PSW 文件复制)",
+    "module": "Quality",
+    "type": "Action",
+    "roles": ["SD"],
+    "tip": "复制零件提交保证书(PSW)相关文件数据",
+    "related": [{"code": "ZMFM050035", "label": "APQP 清单"}]
+  },
+  {
+    "id": 65,
+    "code": "ZMFM050082",
+    "desc": "APQP Summary Report (APQP 汇总报告)",
+    "module": "Quality",
+    "type": "Report",
+    "roles": ["SD"],
+    "tip": "导出质量先期策划进度的综合报表",
+    "related": [{"code": "ZMFM050035", "label": "APQP 清单"}]
+  },
+  {
+    "id": 66,
+    "code": "YMFMCOMMODITY",
+    "desc": "Maintain Commodity Code (维护商品代码-定制)",
+    "module": "Master Data",
+    "type": "Action",
+    "roles": ["Buyer"],
+    "tip": "定制事务代码用于更新商品分类信息",
+    "related": [{"code": "MM02", "label": "维护商品代码"}]
+  },
+  {
+    "id": 67,
+    "code": "ZMFMVMUPD",
+    "desc": "Vendor master, Contact mass update (供应商主数据与联系人批量更新)",
+    "module": "Master Data",
+    "type": "Action",
+    "roles": ["Buyer"],
+    "tip": "大批量更新供应商通讯录和基础信息",
+    "related": [{"code": "BP", "label": "供应商主数据"}, {"code": "XK99", "label": "批量维护供应商"}]
+  },
+  {
+    "id": 68,
+    "code": "XK99",
+    "desc": "Mass maintenance, vendor master (批量维护供应商主数据)",
+    "module": "Master Data",
+    "type": "Action",
+    "roles": ["Buyer"],
+    "tip": "标准系统提供的多维度供应商大批量修改工具",
+    "related": [{"code": "ZMFMVMUPD", "label": "联系人批量更新"}]
+  },
+  {
+    "id": 69,
+    "code": "MEMASSIN",
+    "desc": "Mass-Changing of Purch. Info Records (批量修改采购信息记录)",
+    "module": "Master Data",
+    "type": "Action",
+    "roles": ["Buyer"],
+    "tip": "一次性调整多条采购信息记录的字段值",
+    "related": [{"code": "ME12", "label": "单条修改信息记录"}]
+  },
+  {
+    "id": 70,
+    "code": "MB51",
+    "desc": "Materail Doc List (物料凭证清单)",
+    "module": "Inventory",
+    "type": "Report",
+    "roles": ["Manager"],
+    "tip": "查看收发货等历史物料移动凭证记录",
+    "related": [{"code": "MIGO", "label": "货物移动"}]
+  },
+  {
+    "id": 71,
+    "code": "MEMASSSA",
+    "desc": "Mass Changing of Sched. Agreements (批量修改计划协议)",
+    "module": "Purchasing",
+    "type": "Action",
+    "roles": ["Buyer"],
+    "tip": "针对长期交货协议的批量内容修改",
+    "related": [{"code": "ME32L", "label": "修改计划协议"}]
+  },
+  {
+    "id": 72,
+    "code": "ZVA2",
+    "desc": "Maintain Viva User Report (维护 VIVA 用户报表)",
+    "module": "SD Custom",
+    "type": "Report",
+    "roles": ["SD"],
+    "tip": "管理 VIVA 系统的用户和权限相关报表",
+    "related": [{"code": "ZVZ3", "label": "VIVA 通知管理"}]
+  },
+  {
+    "id": 73,
+    "code": "ZVZ3",
+    "desc": "VIVA- Notice management (VIVA 通知管理)",
+    "module": "SD Custom",
+    "type": "Action",
+    "roles": ["SD"],
+    "tip": "管理 VIVA 业务流程中的通知分发",
+    "related": [{"code": "ZVA2", "label": "VIVA 用户报表"}]
+  },
+  {
+    "id": 74,
+    "code": "ZMFMB0280",
+    "desc": "Upload Vendor - Supplier Host (上传供应商-主机厂关系)",
+    "module": "Master Data",
+    "type": "Action",
+    "roles": ["Buyer"],
+    "tip": "批量导入主机厂与供应商的映射关系",
+    "related": [{"code": "ZMFMHOST", "label": "维护供应商主机厂"}]
+  },
+  {
+    "id": 75,
+    "code": "YMFMCPBP",
+    "desc": "Compare Prices between Plants (工厂间比价)",
+    "module": "Sourcing",
+    "type": "Report",
+    "roles": ["PPD"],
+    "tip": "比较同一物料在不同工厂或供应商处的采购价格",
+    "related": [{"code": "ZMFM050012", "label": "目标成本"}]
+  },
+  {
+    "id": 76,
+    "code": "MM01",
+    "desc": "Create Material (创建物料)",
+    "module": "Master Data",
+    "type": "Action",
+    "roles": ["Buyer", "PD"],
+    "tip": "新建物料主数据",
+    "related": [{"code": "MM02", "label": "修改物料"}, {"code": "MM03", "label": "显示物料"}]
+  },
+  {
+    "id": 77,
+    "code": "YMMMM04",
+    "desc": "Materail Master List (物料主数据清单)",
+    "module": "Master Data",
+    "type": "Report",
+    "roles": ["PD"],
+    "tip": "输出物料主数据的全量/过滤报表",
+    "related": [{"code": "MM03", "label": "显示物料"}]
+  },
+  {
+    "id": 78,
+    "code": "ZMFM050080",
+    "desc": "PDS Report (PDS 报表)",
+    "module": "System Admin",
+    "type": "Report",
+    "roles": ["PD"],
+    "tip": "定制的 PDS 模块综合报表",
+    "related": [{"code": "YMGLAUMG", "label": "PDS 用户维护"}]
+  },
+  {
+    "id": 79,
+    "code": "ZMFM050084",
+    "desc": "Indicator Maintain (指标/标识维护)",
+    "module": "System Admin",
+    "type": "Config",
+    "roles": ["PD"],
+    "tip": "系统后台自定义标识和控制参数的维护",
+    "related": [{"code": "ZMFM050080", "label": "PDS 报表"}]
+  },
+  {
+    "id": 80,
+    "code": "YMGLAUMG",
+    "desc": "PDS User Maintenance (PDS 用户维护)",
+    "module": "System Admin",
+    "type": "Config",
+    "roles": ["PD"],
+    "tip": "管理 PDS 系统特定角色的用户权限分配",
+    "related": [{"code": "SU01D", "label": "用户显示"}]
+  },
+  {
+    "id": 81,
+    "code": "YMFMCODE",
+    "desc": "Maintain Buyer code (维护买方代码)",
+    "module": "System Admin",
+    "type": "Config",
+    "roles": ["PD"],
+    "tip": "系统内采购员标识代码的对应关系维护",
+    "related": []
+  },
+  {
+    "id": 82,
+    "code": "ZMFM0019",
+    "desc": "Maintain Approval Level - PCA (维护审批层级-PCA)",
+    "module": "System Admin",
+    "type": "Config",
+    "roles": ["PD"],
+    "tip": "配置 PCA 流程的审批人矩阵和授权级别",
+    "related": [{"code": "ZMFM0011", "label": "创建 PCA"}]
+  },
+  {
+    "id": 83,
+    "code": "ZTBL",
+    "desc": "Table Browser (数据表浏览器)",
+    "module": "System Admin",
+    "type": "Report",
+    "roles": ["PD"],
+    "tip": "定制版的数据表直接查询工具(类似 SE16)",
+    "related": []
+  },
+  {
+    "id": 84,
+    "code": "SU01D",
+    "desc": "User Display (用户显示)",
+    "module": "System Admin",
+    "type": "Report",
+    "roles": ["PD"],
+    "tip": "查询系统 SAP 账号的信息及权限参数",
+    "related": [{"code": "YMGLAUMG", "label": "PDS 用户维护"}]
+  },
+  {
+    "id": 85,
+    "code": "ZMFMR0230",
+    "desc": "Vendor Confirmation Report (供应商确认报表)",
+    "module": "Master Data",
+    "type": "Report",
+    "roles": ["PD"],
+    "tip": "监控供应商对发出的询价或协议的确认状态",
+    "related": [{"code": "BP", "label": "供应商主数据"}]
+  },
+  {
+    "id": 86,
+    "code": "ZMFM_FIRM_UPD",
+    "desc": "Mass Firm Zone Update (批量确定区域更新)",
+    "module": "Planning",
+    "type": "Action",
+    "roles": ["PD"],
+    "tip": "批量刷新计划协议中的交货确定周期区",
+    "related": [{"code": "MEMASSSA", "label": "批量修改计划协议"}]
+  }
+]
