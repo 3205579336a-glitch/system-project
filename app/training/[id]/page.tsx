@@ -1,23 +1,22 @@
 "use client";
 
 import { useState, useEffect, use, useRef } from 'react';
+import { createClient } from '@supabase/supabase-js'; // 🌟 新增正规引入
 import { 
-  ArrowLeft, Share2, ThumbsUp, BookmarkPlus, PlayCircle, 
+  ArrowLeft, Share2, ThumbsUp, ThumbsDown, BookmarkPlus, PlayCircle, 
   FileText, CheckCircle2, Link as LinkIcon, User, 
   Clock, Tag, ShieldCheck, ExternalLink, Sparkles, 
-  Download, Eye
+  Download, Eye, Play, Bookmark, BookmarkCheck, Star
 } from 'lucide-react';
 
-// 模拟 Link 组件，解决 Next.js 环境编译错误
 const Link = ({ href, children, className }: { href: string, children: React.ReactNode, className?: string }) => (
   <a href={href} className={className}>{children}</a>
 );
 
-// 视频播放器组件
 const VideoPlayer = ({ url, title }: { url: string, title: string }) => (
   <iframe 
     src={url} 
-    className="w-full aspect-video bg-black shadow-2xl" 
+    className="w-full aspect-video bg-slate-900 rounded-b-none md:rounded-3xl shadow-sm" 
     title={title}
     allowFullScreen
   />
@@ -29,43 +28,64 @@ export default function TrainingDetail({ params }: { params: Promise<{ id: strin
   const [loading, setLoading] = useState(true);
   const [relatedContent, setRelatedContent] = useState<any[]>([]);
   const [isNotFound, setIsNotFound] = useState(false);
+  const [sessionId, setSessionId] = useState<string>('');
+  
+  // 🌟 真实互动状态 (从数据库映射)
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [feedback, setFeedback] = useState<'like' | 'dislike' | null>(null);
+  const [stats, setStats] = useState({ likes: 0, views: 0 });
+  
   const supabaseRef = useRef<any>(null);
 
-  // --- 辅助函数：处理 Office 文档预览 URL ---
   const getPreviewUrl = (originalUrl: string) => {
     if (!originalUrl) return "";
     const lowerUrl = originalUrl.toLowerCase();
-    // 如果是 Word, PPT, Excel，使用 Microsoft Office Online Viewer 预览
-    if (lowerUrl.includes('.docx') || lowerUrl.includes('.pptx') || lowerUrl.includes('.xlsx') || lowerUrl.includes('.doc') || lowerUrl.includes('.ppt')) {
+    if (lowerUrl.includes('.docx') || lowerUrl.includes('.pptx') || lowerUrl.includes('.xlsx') || lowerUrl.includes('.doc')) {
       return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(originalUrl)}`;
     }
-    // PDF 和 图片浏览器通常可以直接渲染
     return originalUrl;
   };
 
-  // --- 1. 动态加载 Supabase 库并获取数据 ---
+  // --- 🌟 核心埋点引擎：将数据喂给未来的推荐算法 ---
+  const trackAction = async (actionType: string, specificModule?: string) => {
+    if (!supabaseRef.current || !resolvedParams.id || !sessionId) return;
+    try {
+      // 1. 写入用户行为日志表
+      await supabaseRef.current.from('user_interactions').insert([{
+        session_id: sessionId,
+        content_id: resolvedParams.id,
+        module: specificModule || data?.module || 'General',
+        action_type: actionType
+      }]);
+
+      // 2. 累加主表的公开统计数字
+      const counterColumn = `${actionType}s_count`; 
+      if (['view', 'like', 'dislike', 'share', 'download'].includes(actionType)) {
+        const { data: currentData } = await supabaseRef.current.from('learning_contents').select(counterColumn).eq('id', resolvedParams.id).single();
+        if (currentData) {
+          const newVal = (currentData[counterColumn] || 0) + 1;
+          await supabaseRef.current.from('learning_contents').update({ [counterColumn]: newVal }).eq('id', resolvedParams.id);
+        }
+      }
+    } catch (err) { console.warn("埋点记录失败", err); }
+  };
+
   useEffect(() => {
+    // 初始化匿名设备指纹
+    let currentSession = localStorage.getItem('device_session_id');
+    if (!currentSession) {
+      currentSession = `sess_${Math.random().toString(36).substring(2, 10)}_${Date.now()}`;
+      localStorage.setItem('device_session_id', currentSession);
+    }
+    setSessionId(currentSession);
+
     const initAndFetch = async () => {
       setLoading(true);
-      
       try {
-        if (!(window as any).supabase) {
-          await new Promise((resolve, reject) => {
-            const script = document.createElement("script");
-            script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
-            script.async = true;
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-          });
-        }
-
-        const win = window as any;
-        if (!win.supabase) throw new Error("Supabase SDK 加载失败");
-
-        const supabase = win.supabase.createClient(
-          "https://yzeefqpguywxobxprehb.supabase.co",
-          "sb_publishable_RHi0eVDrudtOORT3oruOzQ_lpsXXhoL"
+        // 🌟 修复点：直接使用引入的 createClient，彻底解决 window.supabase 未定义的问题
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
         );
         supabaseRef.current = supabase;
 
@@ -79,270 +99,241 @@ export default function TrainingDetail({ params }: { params: Promise<{ id: strin
 
         if (error || !item) {
           setIsNotFound(true);
-          setLoading(false);
           return;
         }
-
         setData(item);
+        setStats({ likes: item.likes_count || 0, views: item.views_count || 0 });
 
+        // 拉取同模块推荐
         const { data: related } = await supabase
           .from('learning_contents')
-          .select('id, title, module, url, type, author')
+          .select('id, title, module, url, type, author, thumbnail_url')
           .eq('module', item.module)
           .neq('id', item.id)
           .limit(6);
-        
         setRelatedContent(related || []);
+        
+        // 读取收藏与点赞状态
+        const savedFavs = localStorage.getItem('hub_favorites');
+        if (savedFavs && JSON.parse(savedFavs).includes(item.id)) setIsFavorite(true);
+        const savedLikes = localStorage.getItem(`hub_feedback_${item.id}`);
+        if (savedLikes) setFeedback(savedLikes as 'like' | 'dislike');
+
+        // 🔥 核心：记录有效浏览 (View)
+        if (currentSession) {
+          supabase.from('user_interactions').insert([{
+            session_id: currentSession, content_id: item.id, module: item.module, action_type: 'view'
+          }]).then();
+        }
+
       } catch (err) {
-        console.error("Initialization Error:", err);
+        console.error("加载详情失败:", err);
         setIsNotFound(true);
       } finally {
         setLoading(false);
       }
     };
-
     initAndFetch();
   }, [resolvedParams.id]);
 
+  // --- 真实互动操作函数 ---
+  
+  const handleToggleFavorite = () => {
+    const nextState = !isFavorite;
+    setIsFavorite(nextState);
+    const savedFavs = JSON.parse(localStorage.getItem('hub_favorites') || '[]');
+    const newFavs = nextState ? [...savedFavs, data.id] : savedFavs.filter((id: string) => id !== data.id);
+    localStorage.setItem('hub_favorites', JSON.stringify(newFavs));
+    
+    if (nextState) trackAction('favorite');
+  };
+
+  const handleFeedback = (type: 'like' | 'dislike') => {
+    if (feedback === type) return; // 已选则忽略
+    setFeedback(type);
+    localStorage.setItem(`hub_feedback_${data.id}`, type);
+    trackAction(type);
+    
+    if (type === 'like') setStats(s => ({ ...s, likes: s.likes + 1 }));
+  };
+
+  const handleShare = async () => {
+    trackAction('share');
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: data.title,
+          text: `来看看这个 ${data.module} 模块的培训资源：${data.title}`,
+          url: window.location.href
+        });
+      } catch (err) {}
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      alert('分享链接已复制到剪贴板！');
+    }
+  };
+
+  const handleDownload = () => {
+    trackAction('download');
+    // 触发浏览器直接下载行为
+    const a = document.createElement('a');
+    a.href = data.url;
+    a.download = data.title;
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   if (loading) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-[#F9FAFB]">
-        <div className="relative mb-6">
-          <div className="w-16 h-16 border-4 border-blue-50 border-t-blue-600 rounded-full animate-spin"></div>
-          <Sparkles className="absolute inset-0 m-auto w-6 h-6 text-blue-400 animate-pulse" />
-        </div>
-        <div className="text-center">
-          <p className="text-slate-900 font-bold text-sm tracking-widest uppercase">Initializing Knowledge View</p>
-          <p className="text-slate-400 text-xs mt-2 animate-pulse font-medium">正在调取云端存储并加载预览引擎...</p>
-        </div>
+      <div className="h-screen flex flex-col items-center justify-center bg-[#F8FAFC]">
+        <div className="w-16 h-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin mb-6"></div>
+        <p className="font-bold text-sm tracking-[0.2em] uppercase text-slate-400 animate-pulse">Loading Asset...</p>
       </div>
     );
   }
 
-  if (isNotFound) {
-    return (
-      <div className="h-screen flex flex-col items-center justify-center bg-white p-6 text-center">
-        <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mb-6">
-          <XCircle className="w-10 h-10 text-red-500 opacity-20" />
-        </div>
-        <h1 className="text-xl font-bold text-slate-900 mb-2">知识资产未找到</h1>
-        <p className="text-slate-400 mb-8 max-w-xs text-sm">该文档可能已被移动或删除，请联系 IT 支持团队或返回大厅。</p>
-        <Link href="/training" className="px-8 py-3 bg-slate-900 text-white rounded-xl font-bold text-sm shadow-xl active:scale-95 transition-transform">
-          返回培训中心
-        </Link>
-      </div>
-    );
-  }
+  if (isNotFound) return <div className="h-screen flex items-center justify-center bg-[#F8FAFC] text-slate-500 font-bold">未找到内容或已被删除</div>;
 
   return (
-    <div className="p-6 md:p-8 pb-24 max-w-[1700px] mx-auto font-sans bg-[#F9FAFB] min-h-screen">
+    <div className="bg-[#F8FAFC] min-h-screen text-slate-700 font-sans selection:bg-blue-200">
       
-      {/* 顶部面包屑与快捷动作 */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <Link href="/training" className="p-2.5 bg-white rounded-xl shadow-sm hover:shadow-md transition-all text-slate-400 hover:text-blue-600 border border-slate-100">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div className="flex flex-col">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Knowledge Base</p>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-slate-900 font-bold">{data.module}</span>
-              <span className="text-slate-300">/</span>
-              <span className="text-slate-500 max-w-[200px] truncate">{data.title}</span>
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
-           <button className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl text-xs font-bold text-slate-600 border border-slate-100 shadow-sm hover:bg-slate-50 transition-all">
-              <Download className="w-4 h-4" /> 下载附件
-           </button>
-           <button className="flex items-center gap-2 bg-blue-600 px-4 py-2 rounded-xl text-xs font-bold text-white shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all">
-              <Share2 className="w-4 h-4" /> 分享
-           </button>
+      <nav className="sticky top-0 left-0 w-full z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-sm">
+        <Link href="/training" className="flex items-center gap-2 text-slate-600 hover:text-blue-600 font-bold transition-colors">
+          <div className="p-2 bg-slate-100 rounded-full border border-slate-200"><ArrowLeft className="w-4 h-4" /></div>
+          <span>返回大厅</span>
+        </Link>
+      </nav>
+
+      <div className="w-full bg-[#F8FAFC] pt-6 md:pt-10">
+        <div className="max-w-[1600px] mx-auto md:px-8">
+           <div className="w-full aspect-video md:rounded-3xl overflow-hidden shadow-xl relative bg-white border border-slate-200">
+              {data.type === 'video' ? <VideoPlayer url={data.url} title={data.title} /> : (
+                <div className="w-full h-full relative group">
+                  <iframe src={getPreviewUrl(data.url)} className="w-full h-full border-none bg-white" title={data.title} />
+                  <div className="absolute bottom-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <a href={data.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 bg-slate-900/90 backdrop-blur-md text-white px-5 py-2.5 rounded-full text-xs font-bold shadow-xl transition-transform hover:scale-105">
+                      <ExternalLink className="w-4 h-4" /> 独立窗口阅读
+                    </a>
+                  </div>
+                </div>
+              )}
+           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
-        
-        {/* 左侧主体：文档展示 + AI 详情 */}
-        <div className="xl:col-span-8 space-y-8">
+      <div className="max-w-[1600px] mx-auto px-6 md:px-8 py-10 md:py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
           
-          {/* 1. 核心预览区 (关键升级) */}
-          <div className="w-full rounded-[40px] shadow-2xl shadow-blue-900/10 overflow-hidden border-4 border-white bg-white group relative">
-            <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
-              <div className="bg-slate-900/80 backdrop-blur text-white px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                <Eye className="w-3 h-3 text-blue-400" /> Live Preview
+          <div className="lg:col-span-8 space-y-10">
+            <div>
+              <div className="flex items-center gap-3 mb-4 flex-wrap">
+                <span className="text-blue-600 font-black tracking-[0.1em] uppercase text-[11px]">{data.module || 'General'}</span>
+                <span className="w-1 h-1 bg-slate-300 rounded-full" />
+                <span className="text-slate-500 font-medium text-xs flex items-center gap-1"><Eye className="w-3.5 h-3.5" /> {stats.views} 次浏览</span>
+                <span className="w-1 h-1 bg-slate-300 rounded-full" />
+                <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold uppercase border border-slate-200">{data.role}</span>
+              </div>
+              
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-slate-900 leading-tight tracking-tight mb-8">
+                {data.title}
+              </h1>
+
+              {/* 真实互动的控制台 */}
+              <div className="flex items-center gap-3 flex-wrap bg-white p-2 md:p-3 rounded-2xl md:rounded-full border border-slate-200 shadow-sm w-fit">
+                
+                <button className="flex items-center justify-center gap-2 bg-slate-900 text-white px-8 py-3 rounded-full font-bold text-sm hover:bg-slate-800 transition-colors shadow-md">
+                  <Play className="w-4 h-4 fill-current" /> {data.type === 'video' ? '播放视频' : '阅读文档'}
+                </button>
+
+                <div className="w-px h-8 bg-slate-200 mx-2 hidden md:block"></div>
+
+                <div className="flex items-center gap-1">
+                  <button onClick={() => handleFeedback('like')} title="点赞" className={`flex items-center gap-1.5 px-4 h-12 rounded-full transition-all ${feedback === 'like' ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'hover:bg-slate-50 text-slate-500'}`}>
+                    <ThumbsUp className={`w-5 h-5 ${feedback === 'like' ? 'fill-current' : ''}`} />
+                    <span className="text-sm font-bold">{stats.likes > 0 ? stats.likes : '赞'}</span>
+                  </button>
+                  <button onClick={() => handleFeedback('dislike')} title="点踩" className={`flex items-center justify-center w-12 h-12 rounded-full transition-all ${feedback === 'dislike' ? 'bg-red-50 text-red-600 border border-red-200' : 'hover:bg-slate-50 text-slate-500'}`}>
+                    <ThumbsDown className={`w-5 h-5 ${feedback === 'dislike' ? 'fill-current' : ''}`} />
+                  </button>
+                </div>
+
+                <div className="w-px h-8 bg-slate-200 mx-2 hidden md:block"></div>
+
+                <button onClick={handleToggleFavorite} title="收藏至工作台" className={`flex items-center justify-center w-12 h-12 rounded-full transition-all ${isFavorite ? 'bg-yellow-50 text-yellow-600 border border-yellow-200' : 'hover:bg-slate-50 text-slate-500'}`}>
+                  {isFavorite ? <BookmarkCheck className="w-5 h-5 fill-current" /> : <BookmarkPlus className="w-5 h-5" />}
+                </button>
+                <button onClick={handleShare} title="分享" className="flex items-center justify-center w-12 h-12 rounded-full hover:bg-slate-50 text-slate-500 transition-all">
+                  <Share2 className="w-5 h-5" />
+                </button>
+                <button onClick={handleDownload} title="下载副本" className="flex items-center justify-center w-12 h-12 rounded-full hover:bg-slate-50 text-slate-500 transition-all">
+                  <Download className="w-5 h-5" />
+                </button>
               </div>
             </div>
 
-            {data.type === 'video' ? (
-              <VideoPlayer url={data.url} title={data.title} />
-            ) : (
-              <div className="bg-slate-200 min-h-[850px] relative">
-                 <iframe 
-                   src={getPreviewUrl(data.url)} 
-                   className="w-full h-[850px] border-none bg-white"
-                   title={data.title}
-                 />
-                 {/* 备用操作提示层 */}
-                 <div className="absolute bottom-6 right-6 opacity-0 group-hover:opacity-100 transition-all">
-                    <a href={data.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-2xl text-xs font-black shadow-2xl hover:scale-105 transition-transform">
-                       <ExternalLink className="w-4 h-4 text-blue-400" /> 全屏阅读原件
+            <div className="pt-8 border-t border-slate-200">
+              <div className="flex items-center gap-2 mb-5">
+                <div className="bg-blue-100 p-1.5 rounded-lg"><Sparkles className="w-4 h-4 text-blue-600" /></div>
+                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest">AI 摘要解析</h3>
+              </div>
+              <p className="text-lg text-slate-600 leading-relaxed font-medium bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                {data.description || "暂无详细的 AI 摘要内容。"}
+              </p>
+              <div className="flex flex-wrap gap-2 mt-6">
+                {data.tags?.map((tag: string) => (
+                  <span key={tag} className="px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-full text-[11px] font-bold uppercase tracking-wider shadow-sm cursor-default">{tag}</span>
+                ))}
+              </div>
+            </div>
+            
+            {/* 外部指令链接 */}
+            {data.extracted_links && data.extracted_links.length > 0 && (
+              <div className="pt-8 border-t border-slate-200">
+                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest mb-6">快捷操作直达</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {data.extracted_links.map((link: any, idx: number) => (
+                    <a key={idx} href={link.url} target="_blank" rel="noreferrer" className="flex items-center justify-between p-4 rounded-2xl bg-white hover:border-blue-300 border border-slate-200 shadow-sm transition-all group">
+                      <div className="flex items-center gap-4">
+                        <div className="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors"><LinkIcon className="w-4 h-4" /></div>
+                        <span className="font-bold text-sm text-slate-800">{link.title}</span>
+                      </div>
+                      <ExternalLink className="w-4 h-4 text-slate-300 group-hover:text-slate-600" />
                     </a>
-                 </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
 
-          {/* 2. AI 深度解析报告看板 */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-            <div className="md:col-span-8 bg-white p-10 rounded-[48px] border border-slate-100 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none rotate-12">
-                   <Sparkles className="w-48 h-48 text-blue-600" />
-                </div>
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="p-3 bg-blue-600 text-white rounded-2xl shadow-xl shadow-blue-200">
-                    <Sparkles className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-black text-slate-900 tracking-tighter">AI 智能解析报告</h2>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Deep Learning Insight</p>
-                  </div>
-                </div>
-
-                <div className="relative z-10">
-                   <div className="bg-blue-50/40 border-l-[6px] border-blue-500 p-8 rounded-r-[32px] mb-8">
-                     <p className="text-slate-700 leading-relaxed text-xl font-medium italic">
-                       “{data.description}”
-                     </p>
-                   </div>
-                   
-                   <div className="flex flex-wrap gap-2.5">
-                     {data.tags?.map((tag: string) => (
-                       <span key={tag} className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-blue-50 hover:text-blue-600 transition-colors">
-                         <Tag className="w-3.5 h-3.5" /> {tag}
-                       </span>
-                     ))}
-                   </div>
-                </div>
-            </div>
-
-            <div className="md:col-span-4">
-               <div className="bg-[#0F172A] p-10 rounded-[48px] text-white shadow-2xl h-full flex flex-col border border-white/5 relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-600" />
-                  <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.25em] mb-10">Quick Connect</h3>
-                  
-                  <div className="space-y-4 flex-1">
-                     {data.extracted_links && data.extracted_links.length > 0 ? (
-                        data.extracted_links.map((link: any, idx: number) => (
-                          <a key={idx} href={link.url} target="_blank" rel="noreferrer" className="flex items-center gap-5 p-5 rounded-3xl bg-white/[0.03] hover:bg-blue-600 transition-all group border border-white/5 hover:border-blue-400/50">
-                             <div className="p-2.5 bg-white/10 rounded-xl group-hover:bg-white/20 shadow-inner">
-                               <ShieldCheck className="w-5 h-5 text-blue-400 group-hover:text-white" />
-                             </div>
-                             <div className="min-w-0">
-                               <p className="text-xs font-black truncate">{link.title}</p>
-                               <p className="text-[9px] opacity-40 font-bold uppercase mt-1 tracking-tighter">前往执行指令</p>
-                             </div>
-                          </a>
-                        ))
-                     ) : (
-                        <div className="py-12 text-center border-2 border-dashed border-white/5 rounded-[32px] opacity-20 bg-black/20">
-                           <LinkIcon className="w-10 h-10 mx-auto mb-3" />
-                           <p className="text-[10px] font-black uppercase tracking-widest">No External Links</p>
-                        </div>
-                     )}
-                  </div>
-
-                  <button className="w-full mt-10 py-5 bg-white text-slate-900 rounded-[24px] font-black text-xs uppercase tracking-[0.1em] hover:scale-105 transition-all shadow-2xl shadow-blue-500/10 active:scale-95">
-                    收藏至我的书架
-                  </button>
-               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 右侧：属性详情 & 知识流推荐 */}
-        <div className="xl:col-span-4 space-y-8">
-          
-          {/* 属性核心卡 */}
-          <div className="bg-white p-10 rounded-[48px] border border-slate-100 shadow-sm relative overflow-hidden">
-             <div className="mb-10">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                  <span className="text-blue-600 text-[11px] font-black uppercase tracking-[0.2em]">Module Category</span>
-                </div>
-                <h1 className="text-3xl font-black text-slate-900 leading-[1.1] tracking-tight">{data.title}</h1>
-             </div>
-
-             <div className="space-y-8 pt-8 border-t border-slate-50">
-                {[
-                  { label: 'Content Publisher', val: data.author || 'IT Support Team', icon: User, color: 'text-blue-500', bg: 'bg-blue-50' },
-                  { label: 'System Last Update', val: data.updated_at ? new Date(data.updated_at).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' }) : '2024年3月15日', icon: Clock, color: 'text-orange-500', bg: 'bg-orange-50' },
-                  { label: 'Target Audience', val: data.role, icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' }
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-5 group">
-                     <div className={`w-12 h-12 rounded-[18px] ${item.bg} flex items-center justify-center ${item.color} group-hover:scale-110 transition-transform shadow-sm`}>
-                        <item.icon className="w-6 h-6" />
-                     </div>
-                     <div>
-                       <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">{item.label}</p>
-                       <p className="text-[15px] font-bold text-slate-800">{item.val}</p>
-                     </div>
-                  </div>
-                ))}
-             </div>
-          </div>
-
-          {/* 知识流推荐 */}
-          <div className="space-y-5">
-            <div className="flex items-center justify-between px-4">
-               <h3 className="font-black text-slate-900 text-xs uppercase tracking-[0.15em]">相关知识流</h3>
-               <button className="text-[10px] font-black text-blue-600 uppercase hover:underline">Explore More</button>
-            </div>
-            <div className="grid gap-4">
+          <div className="lg:col-span-4">
+            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest mb-6">相关推荐 (Up Next)</h3>
+            <div className="flex flex-col gap-3">
               {relatedContent.map((item) => (
-                <Link href={`/training/${item.id}`} key={item.id} className="block group">
-                  <div className="bg-white p-5 rounded-[32px] border border-slate-50 shadow-sm group-hover:shadow-xl group-hover:border-blue-100 group-hover:-translate-y-1 transition-all duration-300">
-                    <div className="flex items-center gap-5">
-                      <div className={`w-14 h-14 rounded-2xl shrink-0 flex items-center justify-center text-slate-400 bg-slate-50 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-inner`}>
-                         {item.type === 'video' ? <PlayCircle className="w-7 h-7" /> : <FileText className="w-7 h-7" />}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[9px] text-blue-600 font-black uppercase tracking-widest mb-1">{item.module}</p>
-                        <h4 className="text-sm font-bold text-slate-800 truncate group-hover:text-blue-600 transition-colors">{item.title}</h4>
-                        <div className="flex items-center gap-2 mt-2">
-                           <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center"><User className="w-3 h-3 text-slate-400" /></div>
-                           <span className="text-[10px] text-slate-400 font-bold">{item.author}</span>
-                        </div>
-                      </div>
+                <Link href={`/training/${item.id}`} key={item.id} className="group flex gap-4 p-3 -mx-3 rounded-2xl hover:bg-white border border-transparent hover:border-slate-200 hover:shadow-sm transition-all">
+                  <div className="relative w-32 md:w-40 aspect-video rounded-xl overflow-hidden bg-slate-200 shrink-0">
+                    {item.thumbnail_url && <img src={item.thumbnail_url} alt={item.title} className="w-full h-full object-cover" />}
+                    <div className="absolute inset-0 flex items-center justify-center bg-slate-900/10 group-hover:bg-slate-900/30 transition-colors">
+                      {item.type === 'video' ? <PlayCircle className="w-8 h-8 text-white drop-shadow-md" /> : <FileText className="w-8 h-8 text-white drop-shadow-md" />}
                     </div>
+                  </div>
+                  <div className="flex flex-col justify-center min-w-0 py-1">
+                    <h4 className="text-sm font-bold text-slate-800 line-clamp-2 leading-snug group-hover:text-blue-600 transition-colors">{item.title}</h4>
+                    <p className="text-[11px] text-slate-500 uppercase tracking-wider mt-2 font-semibold truncate">{item.author || 'Volvo IT'}</p>
                   </div>
                 </Link>
               ))}
               {relatedContent.length === 0 && (
-                <div className="text-center py-16 border-2 border-dashed border-slate-100 rounded-[48px] bg-white/50">
-                   <FileText className="w-10 h-10 text-slate-100 mx-auto mb-3" />
-                   <p className="text-[10px] text-slate-300 font-black uppercase tracking-[0.2em]">End of Module Queue</p>
+                <div className="text-center py-12 border border-dashed border-slate-200 rounded-2xl bg-white">
+                  <p className="text-xs text-slate-400 uppercase tracking-widest">暂无相关内容</p>
                 </div>
               )}
             </div>
           </div>
-        </div>
 
+        </div>
       </div>
-      
-      <style jsx global>{`
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #CBD5E1; }
-      `}</style>
     </div>
   );
-}
-
-// 图标组件补齐
-function XCircle(props: any) {
-  return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>;
 }

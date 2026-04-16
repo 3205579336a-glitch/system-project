@@ -5,9 +5,43 @@
     "desc": "Approve RFA (审批 RFA)",
     "module": "Custom Approval",
     "type": "Action",
-    "roles": ["Manager"],
+    "roles": [
+      "Manager"
+    ],
     "tip": "管理层用于审批 RFA 的操作入口",
-    "related": [{"code": "ZMFM050060_A", "label": "RFA 准备"}]
+    "related": [
+      {
+        "code": "ZMFM050060_A",
+        "label": "RFA 准备"
+      }
+    ],
+    "keywords": [
+      "approve rfa",
+      "审批rfa",
+      "rfa approval",
+      "审批流程",
+      "manager approval"
+    ],
+    "aliases": [
+      "how to approve rfa",
+      "审批rfa怎么做",
+      "manager approve rfa request",
+      "哪里审批rfa"
+    ],
+    "scenario": [
+      "Manager needs to approve an RFA request",
+      "管理层需要审批提交的RFA表单"
+    ],
+    "inputs": [
+      "RFA document number",
+      "Approval comments"
+    ],
+    "outputs": [
+      "Approved RFA",
+      "Updated workflow status"
+    ],
+    "category": "Approval",
+    "priority": "High"
   },
   {
     "id": 2,
@@ -15,9 +49,46 @@
     "desc": "Approve PCA (审批 PCA)",
     "module": "Custom Approval",
     "type": "Action",
-    "roles": ["Manager"],
+    "roles": [
+      "Manager"
+    ],
     "tip": "管理层用于审批 PCA 的操作入口",
-    "related": [{"code": "ZMFM0011", "label": "创建 PCA"}, {"code": "ZMFM0014", "label": "PCA 清单"}]
+    "related": [
+      {
+        "code": "ZMFM0011",
+        "label": "创建 PCA"
+      },
+      {
+        "code": "ZMFM0014",
+        "label": "PCA 清单"
+      }
+    ],
+    "keywords": [
+      "approve pca",
+      "审批pca",
+      "pca approval",
+      "审批流程",
+      "manager approval"
+    ],
+    "aliases": [
+      "how to approve pca",
+      "审批pca怎么做",
+      "manager approve pca request"
+    ],
+    "scenario": [
+      "Manager needs to approve a PCA request",
+      "当管理层需要审批 PCA 请求时"
+    ],
+    "inputs": [
+      "PCA request",
+      "Approval decision"
+    ],
+    "outputs": [
+      "Approved PCA",
+      "Rejected PCA"
+    ],
+    "category": "Approval",
+    "priority": "High"
   },
   {
     "id": 3,
@@ -25,9 +96,57 @@
     "desc": "Create PR (创建采购申请)",
     "module": "Purchasing",
     "type": "Action",
-    "roles": ["Manager", "Buyer", "PD", "PPD"],
+    "roles": [
+      "Manager",
+      "Buyer",
+      "PD",
+      "PPD"
+    ],
     "tip": "采购需求提报入口",
-    "related": [{"code": "ME52N", "label": "修改 PR"}, {"code": "ME53N", "label": "显示 PR"}, {"code": "ME55", "label": "审批 PR"}]
+    "related": [
+      {
+        "code": "ME52N",
+        "label": "修改 PR"
+      },
+      {
+        "code": "ME53N",
+        "label": "显示 PR"
+      },
+      {
+        "code": "ME55",
+        "label": "审批 PR"
+      }
+    ],
+    "keywords": [
+      "create pr",
+      "创建采购申请",
+      "purchase requisition",
+      "提pr",
+      "提购请",
+      "new pr"
+    ],
+    "aliases": [
+      "how to create a pr",
+      "怎么创建采购申请",
+      "我要买东西怎么提单",
+      "提pr的操作"
+    ],
+    "scenario": [
+      "User needs to request materials or services for purchase",
+      "业务部门需要申请采购物料或服务时"
+    ],
+    "inputs": [
+      "Material number",
+      "Quantity",
+      "Plant",
+      "Cost center"
+    ],
+    "outputs": [
+      "Generated PR number",
+      "Purchase requisition document"
+    ],
+    "category": "Creation",
+    "priority": "High"
   },
   {
     "id": 4,
@@ -35,9 +154,49 @@
     "desc": "Change PR (修改采购申请)",
     "module": "Purchasing",
     "type": "Action",
-    "roles": ["Manager", "Buyer", "PD"],
+    "roles": [
+      "Manager",
+      "Buyer",
+      "PD"
+    ],
     "tip": "修改已创建的采购申请信息",
-    "related": [{"code": "ME51N", "label": "创建 PR"}, {"code": "ME53N", "label": "显示 PR"}]
+    "related": [
+      {
+        "code": "ME51N",
+        "label": "创建 PR"
+      },
+      {
+        "code": "ME53N",
+        "label": "显示 PR"
+      }
+    ],
+    "keywords": [
+      "change pr",
+      "修改采购申请",
+      "edit pr",
+      "改pr",
+      "update purchase requisition"
+    ],
+    "aliases": [
+      "how to edit a pr",
+      "怎么修改采购申请",
+      "pr填错了怎么改",
+      "modify existing pr"
+    ],
+    "scenario": [
+      "User needs to update quantities or details of an existing PR",
+      "发现已提交的采购申请有误需要修改时"
+    ],
+    "inputs": [
+      "Existing PR number",
+      "Updated details (e.g., quantity, date)"
+    ],
+    "outputs": [
+      "Updated PR document",
+      "New version of PR"
+    ],
+    "category": "Maintenance",
+    "priority": "Medium"
   },
   {
     "id": 5,
@@ -45,9 +204,45 @@
     "desc": "Display PR (显示采购申请)",
     "module": "Purchasing",
     "type": "Report",
-    "roles": ["Manager", "Buyer", "PD", "PPD"],
+    "roles": [
+      "Manager",
+      "Buyer",
+      "PD",
+      "PPD"
+    ],
     "tip": "查看采购申请的详细信息",
-    "related": [{"code": "ME5A", "label": "PR 清单"}]
+    "related": [
+      {
+        "code": "ME5A",
+        "label": "PR 清单"
+      }
+    ],
+    "keywords": [
+      "display pr",
+      "查看采购申请",
+      "show pr",
+      "看pr",
+      "pr details"
+    ],
+    "aliases": [
+      "how to view a pr",
+      "怎么看采购申请内容",
+      "查询pr详情",
+      "check pr status"
+    ],
+    "scenario": [
+      "User wants to check the details or status of a PR",
+      "想确认某笔采购申请的具体内容和当前状态时"
+    ],
+    "inputs": [
+      "PR number"
+    ],
+    "outputs": [
+      "PR detailed view",
+      "Approval status of PR"
+    ],
+    "category": "Display",
+    "priority": "Low"
   },
   {
     "id": 6,
@@ -55,9 +250,43 @@
     "desc": "Release PR (审批/下达采购申请)",
     "module": "Purchasing",
     "type": "Action",
-    "roles": ["Manager"],
+    "roles": [
+      "Manager"
+    ],
     "tip": "主管审批采购需求",
-    "related": [{"code": "ME54N", "label": "取消下达 PR"}]
+    "related": [
+      {
+        "code": "ME54N",
+        "label": "取消下达 PR"
+      }
+    ],
+    "keywords": [
+      "release pr",
+      "审批采购申请",
+      "pr approval",
+      "下达pr",
+      "manager release"
+    ],
+    "aliases": [
+      "how to approve pr",
+      "怎么审批采购申请",
+      "主管在哪批pr",
+      "mass release pr"
+    ],
+    "scenario": [
+      "Manager needs to collectively or individually release PRs for next step",
+      "主管需要对部门提交的采购申请进行放行审批"
+    ],
+    "inputs": [
+      "Release code",
+      "PR number"
+    ],
+    "outputs": [
+      "Released PR status",
+      "PR ready for PO creation"
+    ],
+    "category": "Approval",
+    "priority": "High"
   },
   {
     "id": 7,
@@ -65,9 +294,43 @@
     "desc": "Cancel released PR (取消已审批的采购申请)",
     "module": "Purchasing",
     "type": "Action",
-    "roles": ["Manager"],
+    "roles": [
+      "Manager"
+    ],
     "tip": "撤销 PR 的审批状态",
-    "related": [{"code": "ME55", "label": "审批 PR"}]
+    "related": [
+      {
+        "code": "ME55",
+        "label": "审批 PR"
+      }
+    ],
+    "keywords": [
+      "cancel release pr",
+      "取消审批",
+      "撤销pr",
+      "revoke pr approval",
+      "反审批"
+    ],
+    "aliases": [
+      "how to cancel pr approval",
+      "批错pr了怎么撤回",
+      "取消采购申请下达",
+      "undo pr release"
+    ],
+    "scenario": [
+      "Manager mistakenly approved a PR and needs to revert it",
+      "发现审批错误，需要撤销采购申请的审批状态"
+    ],
+    "inputs": [
+      "Approved PR number",
+      "Release code"
+    ],
+    "outputs": [
+      "Unreleased PR status",
+      "PR requires approval again"
+    ],
+    "category": "Approval",
+    "priority": "Medium"
   },
   {
     "id": 8,
@@ -75,9 +338,55 @@
     "desc": "Create PO (创建采购订单)",
     "module": "Purchasing",
     "type": "Action",
-    "roles": ["Manager", "Buyer", "PD"],
+    "roles": [
+      "Manager",
+      "Buyer",
+      "PD"
+    ],
     "tip": "将 PR 转化为 PO 或直接创建 PO",
-    "related": [{"code": "ME22N", "label": "修改 PO"}, {"code": "ME23N", "label": "显示 PO"}, {"code": "ME29N", "label": "审批 PO"}]
+    "related": [
+      {
+        "code": "ME22N",
+        "label": "修改 PO"
+      },
+      {
+        "code": "ME23N",
+        "label": "显示 PO"
+      },
+      {
+        "code": "ME29N",
+        "label": "审批 PO"
+      }
+    ],
+    "keywords": [
+      "create po",
+      "创建采购订单",
+      "purchase order",
+      "下po",
+      "做订单",
+      "convert pr to po"
+    ],
+    "aliases": [
+      "how to create a po",
+      "怎么下采购订单",
+      "把pr转成po",
+      "issue po to vendor"
+    ],
+    "scenario": [
+      "Buyer needs to issue an official purchase order to a vendor",
+      "采购员需要正式向供应商下达采购订单时"
+    ],
+    "inputs": [
+      "Vendor number",
+      "Purchasing organization",
+      "PR number (optional)"
+    ],
+    "outputs": [
+      "Generated PO number",
+      "Official PO document"
+    ],
+    "category": "Creation",
+    "priority": "High"
   },
   {
     "id": 9,
@@ -85,9 +394,49 @@
     "desc": "Change PO (修改采购订单)",
     "module": "Purchasing",
     "type": "Action",
-    "roles": ["Manager", "Buyer", "PD"],
+    "roles": [
+      "Manager",
+      "Buyer",
+      "PD"
+    ],
     "tip": "更新采购订单数据",
-    "related": [{"code": "ME21N", "label": "创建 PO"}, {"code": "ME23N", "label": "显示 PO"}]
+    "related": [
+      {
+        "code": "ME21N",
+        "label": "创建 PO"
+      },
+      {
+        "code": "ME23N",
+        "label": "显示 PO"
+      }
+    ],
+    "keywords": [
+      "change po",
+      "修改采购订单",
+      "edit po",
+      "改po",
+      "update purchase order"
+    ],
+    "aliases": [
+      "how to edit a po",
+      "怎么修改采购订单",
+      "po交期改一下",
+      "modify po details"
+    ],
+    "scenario": [
+      "Buyer needs to adjust quantity, price, or delivery date on a PO",
+      "需要与供应商协商后更改订单的交期或数量时"
+    ],
+    "inputs": [
+      "PO number",
+      "Updated fields"
+    ],
+    "outputs": [
+      "Updated PO document",
+      "PO printout triggered"
+    ],
+    "category": "Maintenance",
+    "priority": "Medium"
   },
   {
     "id": 10,
@@ -95,9 +444,48 @@
     "desc": "Display PO (显示采购订单)",
     "module": "Purchasing",
     "type": "Report",
-    "roles": ["Manager", "Buyer", "PD"],
+    "roles": [
+      "Manager",
+      "Buyer",
+      "PD"
+    ],
     "tip": "查看采购订单详情",
-    "related": [{"code": "ME2N", "label": "按 PO 号查订单"}, {"code": "ME2L", "label": "按供应商查订单"}]
+    "related": [
+      {
+        "code": "ME2N",
+        "label": "按 PO 号查订单"
+      },
+      {
+        "code": "ME2L",
+        "label": "按供应商查订单"
+      }
+    ],
+    "keywords": [
+      "display po",
+      "查看采购订单",
+      "show po",
+      "看po",
+      "po history"
+    ],
+    "aliases": [
+      "how to view a po",
+      "怎么查采购订单",
+      "订单发没发",
+      "check po status"
+    ],
+    "scenario": [
+      "User wants to check if a PO has been sent or verify its items",
+      "查询采购订单是否已经下达给供应商或查看明细"
+    ],
+    "inputs": [
+      "PO number"
+    ],
+    "outputs": [
+      "PO detailed screen",
+      "PO history (GR/IR status)"
+    ],
+    "category": "Display",
+    "priority": "Low"
   },
   {
     "id": 11,
@@ -105,9 +493,43 @@
     "desc": "Release PO (审批/下达采购订单)",
     "module": "Purchasing",
     "type": "Action",
-    "roles": ["Manager"],
+    "roles": [
+      "Manager"
+    ],
     "tip": "对生成的采购订单进行放行",
-    "related": [{"code": "ME23N", "label": "显示 PO"}]
+    "related": [
+      {
+        "code": "ME23N",
+        "label": "显示 PO"
+      }
+    ],
+    "keywords": [
+      "release po",
+      "审批采购订单",
+      "po approval",
+      "下达po",
+      "manager release po"
+    ],
+    "aliases": [
+      "how to approve po",
+      "怎么审批采购订单",
+      "老板批po在哪",
+      "approve purchase order"
+    ],
+    "scenario": [
+      "Management needs to approve a created PO before it is sent out",
+      "采购订单创建后需要经过层层审批才能生效发送"
+    ],
+    "inputs": [
+      "PO number",
+      "Release strategy code"
+    ],
+    "outputs": [
+      "Released PO",
+      "PO ready for output/printing"
+    ],
+    "category": "Approval",
+    "priority": "High"
   },
   {
     "id": 12,
@@ -115,9 +537,47 @@
     "desc": "Goods Movement (GR) (货物移动/收货)",
     "module": "Inventory",
     "type": "Action",
-    "roles": ["Manager"],
+    "roles": [
+      "Manager"
+    ],
     "tip": "物料的收发货及转移操作",
-    "related": [{"code": "MB51", "label": "物料凭证清单"}]
+    "related": [
+      {
+        "code": "MB51",
+        "label": "物料凭证清单"
+      }
+    ],
+    "keywords": [
+      "migo",
+      "goods receipt",
+      "收货",
+      "发货",
+      "goods movement",
+      "入库",
+      "出库",
+      "gr"
+    ],
+    "aliases": [
+      "how to receive goods",
+      "怎么做收货",
+      "物料怎么入库",
+      "do goods receipt"
+    ],
+    "scenario": [
+      "Warehouse receives materials from vendor and performs goods receipt",
+      "仓库收到供应商的送货，需要系统做入库确认"
+    ],
+    "inputs": [
+      "PO number",
+      "Delivery note",
+      "Quantity received"
+    ],
+    "outputs": [
+      "Material document",
+      "Updated inventory"
+    ],
+    "category": "Creation",
+    "priority": "High"
   },
   {
     "id": 13,
@@ -125,9 +585,47 @@
     "desc": "Edit Weekly Reports (编辑周报/费用报销)",
     "module": "Finance/HR",
     "type": "Action",
-    "roles": ["Manager", "Buyer", "SD", "PD"],
+    "roles": [
+      "Manager",
+      "Buyer",
+      "SD",
+      "PD"
+    ],
     "tip": "维护人员周报及报销数据",
-    "related": [{"code": "ZFFMPRAP", "label": "报销审批"}]
+    "related": [
+      {
+        "code": "ZFFMPRAP",
+        "label": "报销审批"
+      }
+    ],
+    "keywords": [
+      "edit weekly report",
+      "编辑周报",
+      "expense claim",
+      "报销",
+      "填报销",
+      "timesheet"
+    ],
+    "aliases": [
+      "how to claim expense",
+      "怎么报销",
+      "填周报在哪填",
+      "submit weekly report"
+    ],
+    "scenario": [
+      "Employee needs to submit a weekly work report or claim expenses",
+      "员工周末需要填写个人周报并提交费用报销单"
+    ],
+    "inputs": [
+      "Expense receipts",
+      "Work hours"
+    ],
+    "outputs": [
+      "Submitted report",
+      "Expense claim record"
+    ],
+    "category": "Maintenance",
+    "priority": "Medium"
   },
   {
     "id": 14,
@@ -135,9 +633,43 @@
     "desc": "Expense Claim Approval (费用报销审批)",
     "module": "Finance/HR",
     "type": "Action",
-    "roles": ["Manager"],
+    "roles": [
+      "Manager"
+    ],
     "tip": "管理层审批费用报销单",
-    "related": [{"code": "PR04", "label": "编辑周报"}]
+    "related": [
+      {
+        "code": "PR04",
+        "label": "编辑周报"
+      }
+    ],
+    "keywords": [
+      "expense approval",
+      "报销审批",
+      "claim approval",
+      "审批报销",
+      "批钱"
+    ],
+    "aliases": [
+      "how to approve expenses",
+      "怎么审批报销单",
+      "老板批报销",
+      "manager claim approval"
+    ],
+    "scenario": [
+      "Manager reviews and approves team's expense claims",
+      "部门经理需要审批下属提交的交通或餐饮报销"
+    ],
+    "inputs": [
+      "Expense claim ID",
+      "Approval decision"
+    ],
+    "outputs": [
+      "Approved expense claim",
+      "Notification to finance"
+    ],
+    "category": "Approval",
+    "priority": "High"
   },
   {
     "id": 15,
@@ -145,9 +677,49 @@
     "desc": "Display/Maintain vendor master (显示/维护供应商主数据)",
     "module": "Master Data",
     "type": "Action",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "业务合作伙伴与供应商核心信息管理",
-    "related": [{"code": "MKVZ", "label": "采购供应商清单"}, {"code": "XK99", "label": "批量维护供应商"}]
+    "related": [
+      {
+        "code": "MKVZ",
+        "label": "采购供应商清单"
+      },
+      {
+        "code": "XK99",
+        "label": "批量维护供应商"
+      }
+    ],
+    "keywords": [
+      "bp",
+      "vendor master",
+      "供应商主数据",
+      "business partner",
+      "建供应商",
+      "查供应商"
+    ],
+    "aliases": [
+      "how to create vendor",
+      "怎么建新供应商",
+      "修改供应商信息",
+      "maintain business partner"
+    ],
+    "scenario": [
+      "Buyer needs to onboard a new vendor or update their banking details",
+      "采购录入新的合作供应商资料或者修改其联系方式"
+    ],
+    "inputs": [
+      "Vendor details (Name, Address, Tax info)",
+      "Purchasing org"
+    ],
+    "outputs": [
+      "BP number",
+      "Vendor master record"
+    ],
+    "category": "Maintenance",
+    "priority": "High"
   },
   {
     "id": 16,
@@ -155,9 +727,43 @@
     "desc": "Display/Maintain Vendor Purchase org. detail (维护供应商采购组织明细)",
     "module": "Master Data",
     "type": "Action",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "补充维护供应商在特定采购组织下的数据",
-    "related": [{"code": "BP", "label": "供应商主数据"}]
+    "related": [
+      {
+        "code": "BP",
+        "label": "供应商主数据"
+      }
+    ],
+    "keywords": [
+      "vendor purch org",
+      "采购组织明细",
+      "maintain vendor details",
+      "供应商采购视图"
+    ],
+    "aliases": [
+      "update vendor purch details",
+      "维护供应商采购信息",
+      "给供应商扩充采购组织"
+    ],
+    "scenario": [
+      "Buyer needs to extend an existing vendor to a new purchasing organization",
+      "需要把现有供应商扩展到另外一个采购组织下使用"
+    ],
+    "inputs": [
+      "Vendor number",
+      "Purchasing organization",
+      "Payment terms"
+    ],
+    "outputs": [
+      "Extended vendor data",
+      "Purchasing view created"
+    ],
+    "category": "Maintenance",
+    "priority": "Medium"
   },
   {
     "id": 17,
@@ -165,9 +771,42 @@
     "desc": "Supplier Host for Vendor (维护供应商主机厂信息)",
     "module": "Master Data",
     "type": "Action",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "关联供应商与对应主机厂",
-    "related": [{"code": "ZMFMB0280", "label": "批量上传供应商主机厂数据"}]
+    "related": [
+      {
+        "code": "ZMFMB0280",
+        "label": "批量上传供应商主机厂数据"
+      }
+    ],
+    "keywords": [
+      "supplier host",
+      "主机厂",
+      "vendor mapping",
+      "维护供应商主机厂",
+      "oem mapping"
+    ],
+    "aliases": [
+      "how to map vendor to host",
+      "供应商怎么绑定主机厂",
+      "维护主机厂关系"
+    ],
+    "scenario": [
+      "Need to establish relationship between parts supplier and automotive OEM",
+      "需要建立零件供应商和最终主机厂之间的业务对应关系"
+    ],
+    "inputs": [
+      "Vendor ID",
+      "Host ID/OEM code"
+    ],
+    "outputs": [
+      "Vendor-Host mapping record"
+    ],
+    "category": "Maintenance",
+    "priority": "Medium"
   },
   {
     "id": 18,
@@ -175,9 +814,43 @@
     "desc": "List of Vendors: Purchasing (采购供应商清单)",
     "module": "Master Data",
     "type": "Report",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "批量查看采购供应商的简略信息",
-    "related": [{"code": "BP", "label": "显示供应商主数据"}]
+    "related": [
+      {
+        "code": "BP",
+        "label": "显示供应商主数据"
+      }
+    ],
+    "keywords": [
+      "vendor list",
+      "供应商清单",
+      "list of vendors",
+      "查供应商列表",
+      "purchasing vendors"
+    ],
+    "aliases": [
+      "how to export vendor list",
+      "怎么导出所有供应商",
+      "看看库里有哪些供应商"
+    ],
+    "scenario": [
+      "Buyer wants to extract a list of all active vendors for a specific purchasing group",
+      "采购想要导出自己负责的所有供应商名录"
+    ],
+    "inputs": [
+      "Purchasing organization",
+      "Account group"
+    ],
+    "outputs": [
+      "Report of vendors",
+      "Exportable Excel list"
+    ],
+    "category": "Report",
+    "priority": "Low"
   },
   {
     "id": 19,
@@ -185,9 +858,48 @@
     "desc": "Display Material (显示物料)",
     "module": "Master Data",
     "type": "Report",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "查询物料主数据详细视图",
-    "related": [{"code": "MM01", "label": "创建物料"}, {"code": "MM02", "label": "修改物料/商品代码"}]
+    "related": [
+      {
+        "code": "MM01",
+        "label": "创建物料"
+      },
+      {
+        "code": "MM02",
+        "label": "修改物料/商品代码"
+      }
+    ],
+    "keywords": [
+      "display material",
+      "显示物料",
+      "查物料",
+      "material master",
+      "看物料主数据"
+    ],
+    "aliases": [
+      "how to check material",
+      "怎么看物料信息",
+      "这个料号是什么东西",
+      "view material details"
+    ],
+    "scenario": [
+      "User needs to check the basic unit of measure or weight of a material",
+      "想查一下某个物料号的单位或者库存状态"
+    ],
+    "inputs": [
+      "Material number",
+      "Plant"
+    ],
+    "outputs": [
+      "Material master views",
+      "Material details"
+    ],
+    "category": "Display",
+    "priority": "Low"
   },
   {
     "id": 20,
@@ -195,9 +907,42 @@
     "desc": "Maintain Commodity Code (维护商品代码)",
     "module": "Master Data",
     "type": "Action",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "维护物料的分类代码",
-    "related": [{"code": "YMFMCOMMODITY", "label": "定制化商品代码维护"}]
+    "related": [
+      {
+        "code": "YMFMCOMMODITY",
+        "label": "定制化商品代码维护"
+      }
+    ],
+    "keywords": [
+      "change material",
+      "修改物料",
+      "commodity code",
+      "商品代码",
+      "改料号信息"
+    ],
+    "aliases": [
+      "how to update material",
+      "物料商品代码怎么改",
+      "edit material master"
+    ],
+    "scenario": [
+      "Customs department requires a commodity code update for export/import",
+      "关务要求给物料维护正确的HS海关商品分类代码"
+    ],
+    "inputs": [
+      "Material number",
+      "Commodity code value"
+    ],
+    "outputs": [
+      "Updated material master"
+    ],
+    "category": "Maintenance",
+    "priority": "Medium"
   },
   {
     "id": 21,
@@ -205,9 +950,47 @@
     "desc": "Project Maintenance (项目维护)",
     "module": "Project Control",
     "type": "Action",
-    "roles": ["PPD", "Buyer", "PD"],
+    "roles": [
+      "PPD",
+      "Buyer",
+      "PD"
+    ],
     "tip": "定义及维护项目主参数",
-    "related": [{"code": "ZMFMB2010", "label": "项目控制"}, {"code": "ZMFM050072", "label": "新零件清单 NPL"}]
+    "related": [
+      {
+        "code": "ZMFMB2010",
+        "label": "项目控制"
+      },
+      {
+        "code": "ZMFM050072",
+        "label": "新零件清单 NPL"
+      }
+    ],
+    "keywords": [
+      "project maintenance",
+      "项目维护",
+      "setup project",
+      "建项目",
+      "project parameters"
+    ],
+    "aliases": [
+      "how to create a project",
+      "新项目在哪建",
+      "维护项目基本信息"
+    ],
+    "scenario": [
+      "A new vehicle model project is launched, needs system setup",
+      "公司立项了一个新车型，需要在系统里建立项目档案"
+    ],
+    "inputs": [
+      "Project code",
+      "Project details"
+    ],
+    "outputs": [
+      "Project master record"
+    ],
+    "category": "Maintenance",
+    "priority": "Medium"
   },
   {
     "id": 22,
@@ -215,9 +998,44 @@
     "desc": "NPL (新零件清单)",
     "module": "Project Control",
     "type": "Action",
-    "roles": ["PPD", "Buyer", "PD"],
+    "roles": [
+      "PPD",
+      "Buyer",
+      "PD"
+    ],
     "tip": "管理项目中导入的新物料清单",
-    "related": [{"code": "ZMFM050071", "label": "项目维护"}]
+    "related": [
+      {
+        "code": "ZMFM050071",
+        "label": "项目维护"
+      }
+    ],
+    "keywords": [
+      "npl",
+      "新零件清单",
+      "new part list",
+      "项目bom",
+      "导入新零件"
+    ],
+    "aliases": [
+      "how to check new parts",
+      "新物料清单在哪看",
+      "导入npl"
+    ],
+    "scenario": [
+      "Engineering releases the first draft BOM for a new project to NPL",
+      "研发给出了新项目的第一版BOM，需要导入新零件清单系统"
+    ],
+    "inputs": [
+      "Project ID",
+      "Part numbers list"
+    ],
+    "outputs": [
+      "NPL registry",
+      "Sourcing task list"
+    ],
+    "category": "Maintenance",
+    "priority": "Medium"
   },
   {
     "id": 23,
@@ -225,9 +1043,44 @@
     "desc": "Target Cost (目标成本)",
     "module": "Project Control",
     "type": "Action",
-    "roles": ["PPD", "Buyer", "PD"],
+    "roles": [
+      "PPD",
+      "Buyer",
+      "PD"
+    ],
     "tip": "维护和追踪零件的目标成本",
-    "related": [{"code": "ZMFMB2010", "label": "项目控制"}]
+    "related": [
+      {
+        "code": "ZMFMB2010",
+        "label": "项目控制"
+      }
+    ],
+    "keywords": [
+      "target cost",
+      "目标成本",
+      "cost tracking",
+      "维护成本",
+      "零件成本核算"
+    ],
+    "aliases": [
+      "set target cost",
+      "在哪录目标成本",
+      "怎么看目标价"
+    ],
+    "scenario": [
+      "Purchasing manager sets the baseline target price for a new part negotiation",
+      "定点前，财务和采购经理需要给新零件设定一个目标采购成本"
+    ],
+    "inputs": [
+      "Part number",
+      "Target cost value"
+    ],
+    "outputs": [
+      "Saved target cost",
+      "Cost variance report base"
+    ],
+    "category": "Maintenance",
+    "priority": "High"
   },
   {
     "id": 24,
@@ -235,9 +1088,42 @@
     "desc": "Project Control (项目控制/MPP)",
     "module": "Project Control",
     "type": "Action",
-    "roles": ["PPD", "Buyer", "PD"],
+    "roles": [
+      "PPD",
+      "Buyer",
+      "PD"
+    ],
     "tip": "新项目及量产前期综合控制平台",
-    "related": [{"code": "ZMFM050071", "label": "项目维护"}]
+    "related": [
+      {
+        "code": "ZMFM050071",
+        "label": "项目维护"
+      }
+    ],
+    "keywords": [
+      "project control",
+      "项目控制",
+      "mpp",
+      "综合控制台",
+      "量产前管理"
+    ],
+    "aliases": [
+      "open mpp dashboard",
+      "项目控制台怎么进",
+      "看项目总进度"
+    ],
+    "scenario": [
+      "Project manager monitors overall status of sourcing and part readiness",
+      "项目经理需要纵览整个项目的定点和零件APQP进度"
+    ],
+    "inputs": [
+      "Project code"
+    ],
+    "outputs": [
+      "Project dashboard view"
+    ],
+    "category": "Display",
+    "priority": "Medium"
   },
   {
     "id": 25,
@@ -245,9 +1131,49 @@
     "desc": "Stand-alone APQP / Buyer Receipt (独立 APQP / 买方接收)",
     "module": "Quality",
     "type": "Action",
-    "roles": ["SD", "Buyer", "PD"],
+    "roles": [
+      "SD",
+      "Buyer",
+      "PD"
+    ],
     "tip": "先期产品质量策划数据单条录入与买方接收确认",
-    "related": [{"code": "ZMFM050015", "label": "批量上传 APQP/买方接收"}, {"code": "ZMFM050035", "label": "APQP 清单"}]
+    "related": [
+      {
+        "code": "ZMFM050015",
+        "label": "批量上传 APQP/买方接收"
+      },
+      {
+        "code": "ZMFM050035",
+        "label": "APQP 清单"
+      }
+    ],
+    "keywords": [
+      "apqp",
+      "buyer receipt",
+      "买方接收",
+      "质量策划",
+      "单条apqp"
+    ],
+    "aliases": [
+      "do buyer receipt",
+      "买方接收怎么点",
+      "录入apqp进度"
+    ],
+    "scenario": [
+      "Buyer confirms receipt of initial PPAP samples from supplier",
+      "采购员收到供应商的样件后系统上做买方接收动作"
+    ],
+    "inputs": [
+      "Part number",
+      "Vendor number",
+      "Receipt date"
+    ],
+    "outputs": [
+      "APQP status updated",
+      "Receipt confirmation"
+    ],
+    "category": "Maintenance",
+    "priority": "Medium"
   },
   {
     "id": 26,
@@ -255,9 +1181,42 @@
     "desc": "Mass upload stand-alone APQP / Mass upload Buyer Receipt (批量上传 APQP/买方接收)",
     "module": "Quality",
     "type": "Action",
-    "roles": ["SD", "Buyer"],
+    "roles": [
+      "SD",
+      "Buyer"
+    ],
     "tip": "通过文件批量导入先期质量及买方接收数据",
-    "related": [{"code": "ZMFM050010", "label": "单条 APQP/接收"}]
+    "related": [
+      {
+        "code": "ZMFM050010",
+        "label": "单条 APQP/接收"
+      }
+    ],
+    "keywords": [
+      "mass upload apqp",
+      "批量上传apqp",
+      "mass buyer receipt",
+      "批量买方接收",
+      "导入接收状态"
+    ],
+    "aliases": [
+      "batch upload apqp",
+      "怎么大批量做买方接收",
+      "用excel导apqp"
+    ],
+    "scenario": [
+      "Buyer has an Excel sheet of 50 received parts and uploads them at once",
+      "采购有一批50个零件都到了，不想一个个点，用表格批量导入接收"
+    ],
+    "inputs": [
+      "Excel template with APQP data"
+    ],
+    "outputs": [
+      "Multiple APQP records updated",
+      "Upload log"
+    ],
+    "category": "Maintenance",
+    "priority": "Medium"
   },
   {
     "id": 27,
@@ -265,9 +1224,48 @@
     "desc": "RFQ Creation by vendor (供应商创建 RFQ)",
     "module": "Sourcing",
     "type": "Action",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "记录供应商提交的报价请求数据",
-    "related": [{"code": "ZMFM050041", "label": "显示/修改 RFQ"}, {"code": "ZMFM050060", "label": "RFQ 请求与显示"}]
+    "related": [
+      {
+        "code": "ZMFM050041",
+        "label": "显示/修改 RFQ"
+      },
+      {
+        "code": "ZMFM050060",
+        "label": "RFQ 请求与显示"
+      }
+    ],
+    "keywords": [
+      "rfq creation",
+      "创建rfq",
+      "供应商报价",
+      "request for quotation",
+      "新建询价单"
+    ],
+    "aliases": [
+      "how to create rfq",
+      "怎么建询价单",
+      "录入供应商报价",
+      "create quote request"
+    ],
+    "scenario": [
+      "Buyer initiates a Request For Quotation to be sent to vendors",
+      "采购开始找供应商要报价，在系统里开一个RFQ单"
+    ],
+    "inputs": [
+      "Material details",
+      "Vendor list",
+      "Deadline"
+    ],
+    "outputs": [
+      "RFQ document number"
+    ],
+    "category": "Creation",
+    "priority": "High"
   },
   {
     "id": 28,
@@ -275,9 +1273,43 @@
     "desc": "Display/Change RFQ (显示/修改 RFQ)",
     "module": "Sourcing",
     "type": "Action",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "查看或更新已有报价请求(RFQ)",
-    "related": [{"code": "ZMFM050040", "label": "创建 RFQ"}]
+    "related": [
+      {
+        "code": "ZMFM050040",
+        "label": "创建 RFQ"
+      }
+    ],
+    "keywords": [
+      "change rfq",
+      "修改rfq",
+      "display rfq",
+      "查看询价单",
+      "update quotation"
+    ],
+    "aliases": [
+      "how to edit rfq",
+      "怎么改询价单信息",
+      "看下这个rfq",
+      "modify rfq"
+    ],
+    "scenario": [
+      "Buyer receives an updated quote from vendor and enters new prices into the RFQ",
+      "供应商给了二轮降价，采购把新价格更新到RFQ里"
+    ],
+    "inputs": [
+      "RFQ number",
+      "New price/terms"
+    ],
+    "outputs": [
+      "Updated RFQ document"
+    ],
+    "category": "Maintenance",
+    "priority": "Medium"
   },
   {
     "id": 29,
@@ -285,9 +1317,41 @@
     "desc": "RFQ Request & Display (RFQ 请求与显示)",
     "module": "Sourcing",
     "type": "Action",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "发起询报价并监控状态",
-    "related": [{"code": "ZMFM050060_A", "label": "RFA 准备"}]
+    "related": [
+      {
+        "code": "ZMFM050060_A",
+        "label": "RFA 准备"
+      }
+    ],
+    "keywords": [
+      "rfq request",
+      "发起询价",
+      "rfq display",
+      "监控rfq状态",
+      "sourcing request"
+    ],
+    "aliases": [
+      "check rfq status",
+      "看各家报价情况",
+      "monitor quotation"
+    ],
+    "scenario": [
+      "Buyer monitors who has replied to the RFQ and who hasn't",
+      "采购对比几家供应商的报价进度并查看报价总览"
+    ],
+    "inputs": [
+      "Project or Material criteria"
+    ],
+    "outputs": [
+      "RFQ status dashboard"
+    ],
+    "category": "Report",
+    "priority": "Medium"
   },
   {
     "id": 30,
@@ -295,9 +1359,42 @@
     "desc": "RFA Preparations (RFA 准备)",
     "module": "Sourcing",
     "type": "Action",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "报价分析(RFA)提交流程前置准备",
-    "related": [{"code": "ZMFM050061", "label": "审批 RFA"}]
+    "related": [
+      {
+        "code": "ZMFM050061",
+        "label": "审批 RFA"
+      }
+    ],
+    "keywords": [
+      "rfa preparation",
+      "rfa准备",
+      "报价分析",
+      "sourcing decision prep",
+      "准备定点"
+    ],
+    "aliases": [
+      "prepare rfa",
+      "怎么做rfa分析",
+      "定点前准备资料"
+    ],
+    "scenario": [
+      "Buyer compares quotes and prepares the Recommendation for Award (RFA)",
+      "采购收集完报价后，做比价表准备向老板推荐定点哪家(RFA)"
+    ],
+    "inputs": [
+      "Completed RFQs",
+      "Cost breakdown"
+    ],
+    "outputs": [
+      "Draft RFA document"
+    ],
+    "category": "Creation",
+    "priority": "High"
   },
   {
     "id": 31,
@@ -305,9 +1402,41 @@
     "desc": "Copy RFQ (复制 RFQ)",
     "module": "Sourcing",
     "type": "Action",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "快速参考历史 RFQ 创建新询价",
-    "related": [{"code": "ZMFM050040", "label": "创建 RFQ"}]
+    "related": [
+      {
+        "code": "ZMFM050040",
+        "label": "创建 RFQ"
+      }
+    ],
+    "keywords": [
+      "copy rfq",
+      "复制rfq",
+      "clone quotation",
+      "再发一次询价",
+      "copy request"
+    ],
+    "aliases": [
+      "how to duplicate rfq",
+      "不想重新填怎么复制一个询价",
+      "快速抄一个rfq"
+    ],
+    "scenario": [
+      "Buyer needs to re-quote a part and copies a previous RFQ to save time",
+      "今年要重新发一轮询价，直接把去年的RFQ单子复制一份改改"
+    ],
+    "inputs": [
+      "Old RFQ number"
+    ],
+    "outputs": [
+      "New RFQ document"
+    ],
+    "category": "Creation",
+    "priority": "Medium"
   },
   {
     "id": 32,
@@ -315,9 +1444,47 @@
     "desc": "Create PCA (创建 PCA)",
     "module": "Custom Approval",
     "type": "Action",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "发起定制化审批流程",
-    "related": [{"code": "ZMFM0012", "label": "修改 PCA"}, {"code": "ZMFM0015", "label": "审批 PCA"}]
+    "related": [
+      {
+        "code": "ZMFM0012",
+        "label": "修改 PCA"
+      },
+      {
+        "code": "ZMFM0015",
+        "label": "审批 PCA"
+      }
+    ],
+    "keywords": [
+      "create pca",
+      "创建pca",
+      "custom approval",
+      "发起审批",
+      "new pca"
+    ],
+    "aliases": [
+      "how to start pca",
+      "怎么起一个pca流程",
+      "提pca"
+    ],
+    "scenario": [
+      "User needs to trigger a custom business approval workflow",
+      "业务遇到特殊事项，需要走公司内部定制的PCA审批流"
+    ],
+    "inputs": [
+      "Justification text",
+      "Attachments"
+    ],
+    "outputs": [
+      "PCA workflow triggered",
+      "PCA number generated"
+    ],
+    "category": "Creation",
+    "priority": "High"
   },
   {
     "id": 33,
@@ -325,9 +1492,42 @@
     "desc": "Change PCA (修改 PCA)",
     "module": "Custom Approval",
     "type": "Action",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "编辑未审批的定制化流程单",
-    "related": [{"code": "ZMFM0013", "label": "显示 PCA"}]
+    "related": [
+      {
+        "code": "ZMFM0013",
+        "label": "显示 PCA"
+      }
+    ],
+    "keywords": [
+      "change pca",
+      "修改pca",
+      "edit pca",
+      "改pca",
+      "update approval form"
+    ],
+    "aliases": [
+      "how to edit pca",
+      "pca怎么改内容",
+      "撤回修改pca"
+    ],
+    "scenario": [
+      "User needs to add more documents to a PCA before manager approves",
+      "流程被退回，或者发现没写清楚，需要重新编辑PCA表单"
+    ],
+    "inputs": [
+      "PCA number",
+      "Updated text/files"
+    ],
+    "outputs": [
+      "Updated PCA form"
+    ],
+    "category": "Maintenance",
+    "priority": "Medium"
   },
   {
     "id": 34,
@@ -335,9 +1535,42 @@
     "desc": "Display PCA (显示 PCA)",
     "module": "Custom Approval",
     "type": "Report",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "查看 PCA 表单内容及状态",
-    "related": [{"code": "ZMFM0014", "label": "PCA 清单"}]
+    "related": [
+      {
+        "code": "ZMFM0014",
+        "label": "PCA 清单"
+      }
+    ],
+    "keywords": [
+      "display pca",
+      "显示pca",
+      "view pca",
+      "看pca",
+      "pca status"
+    ],
+    "aliases": [
+      "check pca workflow",
+      "pca批到哪了",
+      "查pca状态"
+    ],
+    "scenario": [
+      "User checks if the general manager has approved the PCA yet",
+      "员工想看看自己的PCA单子现在卡在谁那里审批"
+    ],
+    "inputs": [
+      "PCA number"
+    ],
+    "outputs": [
+      "PCA detail view",
+      "Approval history log"
+    ],
+    "category": "Display",
+    "priority": "Low"
   },
   {
     "id": 35,
@@ -345,9 +1578,43 @@
     "desc": "PCA List (PCA 清单)",
     "module": "Custom Approval",
     "type": "Report",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "按条件批量查询 PCA 记录",
-    "related": [{"code": "ZMFM0013", "label": "显示 PCA"}]
+    "related": [
+      {
+        "code": "ZMFM0013",
+        "label": "显示 PCA"
+      }
+    ],
+    "keywords": [
+      "pca list",
+      "pca清单",
+      "pca report",
+      "查一堆pca",
+      "approval list"
+    ],
+    "aliases": [
+      "export pca list",
+      "把所有的pca导出来",
+      "查询历史pca"
+    ],
+    "scenario": [
+      "Auditor requests a list of all PCA approvals from last month",
+      "月底审计需要看部门这个月一共提了多少笔PCA"
+    ],
+    "inputs": [
+      "Date range",
+      "Creator ID"
+    ],
+    "outputs": [
+      "List of PCA records",
+      "Excel export"
+    ],
+    "category": "Report",
+    "priority": "Low"
   },
   {
     "id": 36,
@@ -355,9 +1622,50 @@
     "desc": "Create Purchasing Info Record (创建采购信息记录)",
     "module": "Master Data",
     "type": "Action",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "建立物料与供应商的价格交货条件",
-    "related": [{"code": "ME12", "label": "修改信息记录"}, {"code": "ME13", "label": "显示信息记录"}]
+    "related": [
+      {
+        "code": "ME12",
+        "label": "修改信息记录"
+      },
+      {
+        "code": "ME13",
+        "label": "显示信息记录"
+      }
+    ],
+    "keywords": [
+      "create info record",
+      "创建信息记录",
+      "inforecord",
+      "pir",
+      "建价格",
+      "采购主数据"
+    ],
+    "aliases": [
+      "how to maintain price",
+      "系统怎么维护单价",
+      "建个info record",
+      "create pir"
+    ],
+    "scenario": [
+      "A new price is agreed with a vendor, buyer creates an info record to store it",
+      "和供应商谈好了新价格，需要在系统里建一条采购信息记录存价格"
+    ],
+    "inputs": [
+      "Vendor number",
+      "Material number",
+      "Price",
+      "Purchasing org"
+    ],
+    "outputs": [
+      "Info record number created"
+    ],
+    "category": "Creation",
+    "priority": "High"
   },
   {
     "id": 37,
@@ -365,9 +1673,42 @@
     "desc": "Change Purchasing Info Record (修改采购信息记录)",
     "module": "Master Data",
     "type": "Action",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "更新物料/供应商的采购条件",
-    "related": [{"code": "ME14", "label": "信息记录变更历史"}]
+    "related": [
+      {
+        "code": "ME14",
+        "label": "信息记录变更历史"
+      }
+    ],
+    "keywords": [
+      "change info record",
+      "修改信息记录",
+      "update pir",
+      "改价格",
+      "update price"
+    ],
+    "aliases": [
+      "how to update price",
+      "怎么改单价",
+      "修改info record交货期"
+    ],
+    "scenario": [
+      "Vendor raises prices by 5%, buyer updates the info record conditions",
+      "供应商宣布涨价，采购需要进系统修改信息记录里的净价"
+    ],
+    "inputs": [
+      "Info record number",
+      "New price/conditions"
+    ],
+    "outputs": [
+      "Updated info record"
+    ],
+    "category": "Maintenance",
+    "priority": "High"
   },
   {
     "id": 38,
@@ -375,9 +1716,41 @@
     "desc": "Display Purchasing Info Record (显示采购信息记录)",
     "module": "Master Data",
     "type": "Report",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "查看现有信息记录的数据",
-    "related": [{"code": "ME1M", "label": "按物料查信息记录"}]
+    "related": [
+      {
+        "code": "ME1M",
+        "label": "按物料查信息记录"
+      }
+    ],
+    "keywords": [
+      "display info record",
+      "显示信息记录",
+      "查单价",
+      "view pir",
+      "check price"
+    ],
+    "aliases": [
+      "what is the price",
+      "这料现在多少钱",
+      "看看info record"
+    ],
+    "scenario": [
+      "User wants to know the current system price for a material from a specific vendor",
+      "想查一下系统里这个供应商卖这个物料是什么单价"
+    ],
+    "inputs": [
+      "Info record number or Vendor/Material combo"
+    ],
+    "outputs": [
+      "Info record details screen"
+    ],
+    "category": "Display",
+    "priority": "Low"
   },
   {
     "id": 39,
@@ -385,9 +1758,42 @@
     "desc": "Changes to Purchasing Info Record (采购信息记录变更历史)",
     "module": "Master Data",
     "type": "Report",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "追溯信息记录的修改日志",
-    "related": [{"code": "ZMFMR0180", "label": "定制变更查询"}]
+    "related": [
+      {
+        "code": "ZMFMR0180",
+        "label": "定制变更查询"
+      }
+    ],
+    "keywords": [
+      "info record changes",
+      "信息记录变更历史",
+      "pir history",
+      "查修改记录",
+      "price history"
+    ],
+    "aliases": [
+      "who changed the price",
+      "谁把价格改了",
+      "看下价格变动历史"
+    ],
+    "scenario": [
+      "Audit asks to see who changed a material price and when",
+      "审计要求追溯某条价格记录是哪天被哪个账号改掉的"
+    ],
+    "inputs": [
+      "Info record number",
+      "Date range"
+    ],
+    "outputs": [
+      "List of change logs (old vs new value)"
+    ],
+    "category": "Report",
+    "priority": "Low"
   },
   {
     "id": 40,
@@ -395,9 +1801,41 @@
     "desc": "Mark Purch. Info Rec. for Deletion (标记删除采购信息记录)",
     "module": "Master Data",
     "type": "Action",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "对不再使用的采购条件打上删除标记",
-    "related": [{"code": "ME12", "label": "修改信息记录"}]
+    "related": [
+      {
+        "code": "ME12",
+        "label": "修改信息记录"
+      }
+    ],
+    "keywords": [
+      "delete info record",
+      "删除信息记录",
+      "mark for deletion",
+      "打删除标",
+      "delete pir"
+    ],
+    "aliases": [
+      "how to delete price",
+      "价格作废怎么弄",
+      "把info record删了"
+    ],
+    "scenario": [
+      "Vendor no longer supplies this part, info record needs to be flagged for deletion",
+      "供应商不供这个件了，把系统里的信息记录打上删除标记作废"
+    ],
+    "inputs": [
+      "Info record number"
+    ],
+    "outputs": [
+      "Deletion flag set"
+    ],
+    "category": "Maintenance",
+    "priority": "Medium"
   },
   {
     "id": 41,
@@ -405,9 +1843,41 @@
     "desc": "Info Records per Material (按物料查询信息记录)",
     "module": "Master Data",
     "type": "Report",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "列出特定物料关联的所有信息记录",
-    "related": [{"code": "ZMR140", "label": "显示信息记录(定制)"}]
+    "related": [
+      {
+        "code": "ZMR140",
+        "label": "显示信息记录(定制)"
+      }
+    ],
+    "keywords": [
+      "info record per material",
+      "按物料查信息记录",
+      "material pir",
+      "查物料单价",
+      "compare vendor price"
+    ],
+    "aliases": [
+      "who sells this material",
+      "这件有哪几家在供",
+      "把这个料的各家价格导出来"
+    ],
+    "scenario": [
+      "Buyer wants to see all approved vendors and prices for one specific material",
+      "采购想看同一个零件在系统里有哪几家供应商，价格分别是多少"
+    ],
+    "inputs": [
+      "Material number"
+    ],
+    "outputs": [
+      "List of Info records for the material"
+    ],
+    "category": "Report",
+    "priority": "Low"
   },
   {
     "id": 42,
@@ -415,9 +1885,42 @@
     "desc": "Display Info Records (显示信息记录-定制表单)",
     "module": "Master Data",
     "type": "Report",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "定制化的采购信息记录批量查询",
-    "related": [{"code": "ME1M", "label": "按物料查询信息记录"}]
+    "related": [
+      {
+        "code": "ME1M",
+        "label": "按物料查询信息记录"
+      }
+    ],
+    "keywords": [
+      "custom info record list",
+      "定制信息记录",
+      "批量查价格",
+      "mass pir display",
+      "pir report"
+    ],
+    "aliases": [
+      "export all prices",
+      "批量导一下价格本",
+      "看定制的价格报表"
+    ],
+    "scenario": [
+      "Management needs a comprehensive customized report of all purchasing conditions",
+      "年底需要拉出一份全量带有自定义字段的采购价格本明细"
+    ],
+    "inputs": [
+      "Plant",
+      "Purchasing group"
+    ],
+    "outputs": [
+      "Custom ALV report of prices"
+    ],
+    "category": "Report",
+    "priority": "Low"
   },
   {
     "id": 43,
@@ -425,9 +1928,41 @@
     "desc": "Current of Info record information (当前信息记录概览)",
     "module": "Master Data",
     "type": "Report",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "报表形式查看有效的采购信息记录详情",
-    "related": [{"code": "ME13", "label": "显示信息记录"}]
+    "related": [
+      {
+        "code": "ME13",
+        "label": "显示信息记录"
+      }
+    ],
+    "keywords": [
+      "current info record",
+      "当前信息记录",
+      "有效价格概览",
+      "valid pir list"
+    ],
+    "aliases": [
+      "what are active prices",
+      "现在生效的价格有哪些",
+      "看当前有效单价"
+    ],
+    "scenario": [
+      "Buyer verifies which info records are currently active and valid for PO creation",
+      "下采购单前，核对一下目前系统中真正生效能用的单价有哪些"
+    ],
+    "inputs": [
+      "Material",
+      "Vendor"
+    ],
+    "outputs": [
+      "List of valid current info records"
+    ],
+    "category": "Report",
+    "priority": "Low"
   },
   {
     "id": 44,
@@ -435,9 +1970,41 @@
     "desc": "Changes to Purchasing Info Record (采购信息记录变更-定制)",
     "module": "Master Data",
     "type": "Report",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "增强版的信息记录变更追溯报表",
-    "related": [{"code": "ME14", "label": "信息记录变更历史"}]
+    "related": [
+      {
+        "code": "ME14",
+        "label": "信息记录变更历史"
+      }
+    ],
+    "keywords": [
+      "custom pir changes",
+      "定制价格变更记录",
+      "价格修改追溯",
+      "enhanced pir history"
+    ],
+    "aliases": [
+      "export price change history",
+      "导出带审批人的降价记录",
+      "查自定义价格变动"
+    ],
+    "scenario": [
+      "Finance requests a detailed custom report of all price reductions during the quarter",
+      "财务要求出具二季度所有的降价记录明细，使用定制报表跑数据"
+    ],
+    "inputs": [
+      "Date range",
+      "Purchasing org"
+    ],
+    "outputs": [
+      "Custom change log report"
+    ],
+    "category": "Report",
+    "priority": "Low"
   },
   {
     "id": 45,
@@ -445,9 +2012,49 @@
     "desc": "Maintain Source List (维护货源清单)",
     "module": "Master Data",
     "type": "Action",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "维护指定物料在某工厂下的合格供应商时间表",
-    "related": [{"code": "ME03", "label": "显示货源清单"}, {"code": "ME04", "label": "变更历史"}]
+    "related": [
+      {
+        "code": "ME03",
+        "label": "显示货源清单"
+      },
+      {
+        "code": "ME04",
+        "label": "变更历史"
+      }
+    ],
+    "keywords": [
+      "source list",
+      "维护货源清单",
+      "maintain source list",
+      "定点供应商",
+      "合格供方名录"
+    ],
+    "aliases": [
+      "how to add vendor to source list",
+      "货源清单怎么加",
+      "把这颗料配给这家",
+      "update source list"
+    ],
+    "scenario": [
+      "A new vendor is approved for a material, buyer adds them to the source list with valid dates",
+      "新零件定点后，需要给它配上指定的供应商和有效期，MRP才能抓取"
+    ],
+    "inputs": [
+      "Material",
+      "Plant",
+      "Vendor",
+      "Valid to/from dates"
+    ],
+    "outputs": [
+      "Saved source list record"
+    ],
+    "category": "Maintenance",
+    "priority": "High"
   },
   {
     "id": 46,
@@ -455,9 +2062,42 @@
     "desc": "Display Source List (显示货源清单)",
     "module": "Master Data",
     "type": "Report",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "查看特定物料的可用供货源",
-    "related": [{"code": "ME0M", "label": "按物料查货源清单"}]
+    "related": [
+      {
+        "code": "ME0M",
+        "label": "按物料查货源清单"
+      }
+    ],
+    "keywords": [
+      "display source list",
+      "显示货源清单",
+      "查货源",
+      "view source list",
+      "approved vendors"
+    ],
+    "aliases": [
+      "who supplies this material",
+      "看下这个料的货源",
+      "查合格供方"
+    ],
+    "scenario": [
+      "Planner checks why MRP didn't create a PR, perhaps the source list is missing",
+      "计划员发现MRP没跑出需求，想进来看下是不是货源清单没维护"
+    ],
+    "inputs": [
+      "Material",
+      "Plant"
+    ],
+    "outputs": [
+      "Source list entries view"
+    ],
+    "category": "Display",
+    "priority": "Low"
   },
   {
     "id": 47,
@@ -465,9 +2105,41 @@
     "desc": "Changes to Source List (货源清单变更历史)",
     "module": "Master Data",
     "type": "Report",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "跟踪货源清单数据的修改记录",
-    "related": [{"code": "ME01", "label": "维护货源清单"}]
+    "related": [
+      {
+        "code": "ME01",
+        "label": "维护货源清单"
+      }
+    ],
+    "keywords": [
+      "source list changes",
+      "货源清单变更",
+      "修改记录",
+      "history of source list"
+    ],
+    "aliases": [
+      "who changed source list",
+      "谁把货源删了",
+      "查货源修改记录"
+    ],
+    "scenario": [
+      "Investigating why a vendor was suddenly removed from a material's source list",
+      "追查某个供应商的供货资格是在哪天被谁从货源清单里移除的"
+    ],
+    "inputs": [
+      "Material",
+      "Plant"
+    ],
+    "outputs": [
+      "Change log for source list"
+    ],
+    "category": "Report",
+    "priority": "Low"
   },
   {
     "id": 48,
@@ -475,9 +2147,40 @@
     "desc": "Source List for Material (按物料查询货源清单)",
     "module": "Master Data",
     "type": "Report",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "批量输出物料的货源结构",
-    "related": [{"code": "ME03", "label": "显示货源清单"}]
+    "related": [
+      {
+        "code": "ME03",
+        "label": "显示货源清单"
+      }
+    ],
+    "keywords": [
+      "source list by material",
+      "按物料查货源",
+      "批量货源",
+      "mass source list display"
+    ],
+    "aliases": [
+      "export source lists",
+      "把这些料的货源全拉出来",
+      "批量查货源清单"
+    ],
+    "scenario": [
+      "Buyer extracts source lists for a whole product category to review sourcing strategies",
+      "采购经理拉取一整个产品组的物料货源清单，检查独家供货情况"
+    ],
+    "inputs": [
+      "Material group or list"
+    ],
+    "outputs": [
+      "ALV report of multiple source lists"
+    ],
+    "category": "Report",
+    "priority": "Low"
   },
   {
     "id": 49,
@@ -485,9 +2188,42 @@
     "desc": "Generate Source List (生成货源清单)",
     "module": "Master Data",
     "type": "Action",
-    "roles": ["Buyer"],
+    "roles": [
+      "Buyer"
+    ],
     "tip": "根据已有数据自动生成/更新货源清单",
-    "related": [{"code": "ME01", "label": "维护货源清单"}]
+    "related": [
+      {
+        "code": "ME01",
+        "label": "维护货源清单"
+      }
+    ],
+    "keywords": [
+      "generate source list",
+      "生成货源清单",
+      "auto source list",
+      "批量建货源",
+      "mass create source list"
+    ],
+    "aliases": [
+      "how to auto generate source list",
+      "怎么一键生成货源清单",
+      "从信息记录生成货源"
+    ],
+    "scenario": [
+      "System auto-generates source list entries based on newly created info records or outline agreements",
+      "系统里建了一批新协议，用这个程序一次性把货源清单全刷出来"
+    ],
+    "inputs": [
+      "Plant",
+      "Material range"
+    ],
+    "outputs": [
+      "Source list generated logs",
+      "New source list records"
+    ],
+    "category": "Creation",
+    "priority": "Medium"
   },
   {
     "id": 50,
@@ -495,9 +2231,41 @@
     "desc": "APQP List Display (APQP 清单显示)",
     "module": "Quality",
     "type": "Report",
-    "roles": ["SD", "PD"],
+    "roles": [
+      "SD",
+      "PD"
+    ],
     "tip": "查询先期质量策划数据的汇总清单",
-    "related": [{"code": "ZMFM050010", "label": "独立 APQP"}]
+    "related": [
+      {
+        "code": "ZMFM050010",
+        "label": "独立 APQP"
+      }
+    ],
+    "keywords": [
+      "apqp list",
+      "apqp清单",
+      "ppap status",
+      "先期质量清单",
+      "零件开发进度"
+    ],
+    "aliases": [
+      "check apqp status",
+      "看所有件的apqp进度",
+      "导一份apqp报表"
+    ],
+    "scenario": [
+      "Quality team reviews the PPAP/APQP submission status of all parts for a new car project",
+      "SQE团队开周会时拉出整个项目所有零件的APQP提交状态报表"
+    ],
+    "inputs": [
+      "Project code"
+    ],
+    "outputs": [
+      "APQP master report"
+    ],
+    "category": "Report",
+    "priority": "Low"
   },
   {
     "id": 51,
@@ -505,9 +2273,44 @@
     "desc": "Maintain Quota Arrangement (维护配额协议)",
     "module": "Sourcing",
     "type": "Action",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "设置多个供应商间的采购量分配比例",
-    "related": [{"code": "MEQ7", "label": "删除配额协议"}]
+    "related": [
+      {
+        "code": "MEQ7",
+        "label": "删除配额协议"
+      }
+    ],
+    "keywords": [
+      "quota arrangement",
+      "配额协议",
+      "maintain quota",
+      "采购比例分配",
+      "quota setting"
+    ],
+    "aliases": [
+      "how to set split sourcing",
+      "怎么设置两家供应商比例",
+      "配额分配在哪做",
+      "maintain meq1"
+    ],
+    "scenario": [
+      "A part has two suppliers, buyer sets a 60/40 volume split in the system",
+      "一个件有两家供应商，采购需要在系统里维护A家分60%份额，B家40%"
+    ],
+    "inputs": [
+      "Material",
+      "Plant",
+      "Vendor allocations (%)"
+    ],
+    "outputs": [
+      "Saved quota arrangement"
+    ],
+    "category": "Maintenance",
+    "priority": "Medium"
   },
   {
     "id": 52,
@@ -515,9 +2318,42 @@
     "desc": "Delete Quota Arrangement (删除配额协议)",
     "module": "Sourcing",
     "type": "Action",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "清理不再适用的配额数据",
-    "related": [{"code": "MEQ1", "label": "维护配额协议"}]
+    "related": [
+      {
+        "code": "MEQ1",
+        "label": "维护配额协议"
+      }
+    ],
+    "keywords": [
+      "delete quota",
+      "删除配额协议",
+      "remove quota",
+      "清理配额",
+      "cancel split"
+    ],
+    "aliases": [
+      "how to delete split ratio",
+      "这件独家了怎么删配额",
+      "把配额关掉"
+    ],
+    "scenario": [
+      "Vendor B is disqualified, part becomes single-sourced, old quota must be deleted",
+      "B供应商被淘汰变为独家供货，需要把系统里之前的配额比例彻底删掉"
+    ],
+    "inputs": [
+      "Material",
+      "Plant"
+    ],
+    "outputs": [
+      "Quota records deleted"
+    ],
+    "category": "Maintenance",
+    "priority": "Medium"
   },
   {
     "id": 53,
@@ -525,9 +2361,50 @@
     "desc": "Create Scheduling Agreement (创建计划协议)",
     "module": "Purchasing",
     "type": "Action",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "与供应商签订长期的交货排程框架协议",
-    "related": [{"code": "ME32L", "label": "修改计划协议"}, {"code": "ME33L", "label": "显示计划协议"}]
+    "related": [
+      {
+        "code": "ME32L",
+        "label": "修改计划协议"
+      },
+      {
+        "code": "ME33L",
+        "label": "显示计划协议"
+      }
+    ],
+    "keywords": [
+      "create scheduling agreement",
+      "创建计划协议",
+      "outline agreement",
+      "长协",
+      "sa creation",
+      "排程协议"
+    ],
+    "aliases": [
+      "how to create sa",
+      "怎么建计划协议",
+      "跟供应商签长协怎么弄",
+      "setup delivery schedule"
+    ],
+    "scenario": [
+      "A long-term contract is signed with vendor, buyer sets up SA to allow MRP auto-scheduling",
+      "跟供应商定了量产，采购建一个长期的计划协议以便让MRP每天自动推交货排程"
+    ],
+    "inputs": [
+      "Vendor",
+      "Agreement type",
+      "Valid period",
+      "Materials/Prices"
+    ],
+    "outputs": [
+      "Scheduling Agreement document number"
+    ],
+    "category": "Creation",
+    "priority": "High"
   },
   {
     "id": 54,
@@ -535,9 +2412,42 @@
     "desc": "Change Scheduling Agreement (修改计划协议)",
     "module": "Purchasing",
     "type": "Action",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "调整框架协议的内容或有效期",
-    "related": [{"code": "MEMASSSA", "label": "批量修改协议"}]
+    "related": [
+      {
+        "code": "MEMASSSA",
+        "label": "批量修改协议"
+      }
+    ],
+    "keywords": [
+      "change scheduling agreement",
+      "修改计划协议",
+      "edit sa",
+      "改长协",
+      "update outline agreement"
+    ],
+    "aliases": [
+      "extend sa validity",
+      "计划协议过期了怎么延",
+      "修改sa单价"
+    ],
+    "scenario": [
+      "The agreement is about to expire, buyer extends the validity date for another year",
+      "计划协议年底要过期了，采购进去把有效期延长一年，顺便更新下价格"
+    ],
+    "inputs": [
+      "SA number",
+      "New validity date or conditions"
+    ],
+    "outputs": [
+      "Updated Scheduling Agreement"
+    ],
+    "category": "Maintenance",
+    "priority": "High"
   },
   {
     "id": 55,
@@ -545,9 +2455,41 @@
     "desc": "Display Scheduling Agreement (显示计划协议)",
     "module": "Purchasing",
     "type": "Report",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "查看计划协议详情",
-    "related": [{"code": "ME3L", "label": "按供应商查询"}]
+    "related": [
+      {
+        "code": "ME3L",
+        "label": "按供应商查询"
+      }
+    ],
+    "keywords": [
+      "display scheduling agreement",
+      "显示计划协议",
+      "view sa",
+      "看长协",
+      "check outline agreement"
+    ],
+    "aliases": [
+      "what is the sa number",
+      "看下这个协议的内容",
+      "查一下排程协议"
+    ],
+    "scenario": [
+      "User checks the target quantity and cumulative received quantity on an agreement",
+      "想看看这个协议签了多大数量，目前已经收了多少货了"
+    ],
+    "inputs": [
+      "SA number"
+    ],
+    "outputs": [
+      "SA document view"
+    ],
+    "category": "Display",
+    "priority": "Low"
   },
   {
     "id": 56,
@@ -555,9 +2497,41 @@
     "desc": "Outline Agreements per Vendor (按供应商查询框架协议)",
     "module": "Purchasing",
     "type": "Report",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "列出指定供应商的所有框架协议",
-    "related": [{"code": "ME3M", "label": "按物料查询框架协议"}]
+    "related": [
+      {
+        "code": "ME3M",
+        "label": "按物料查询框架协议"
+      }
+    ],
+    "keywords": [
+      "agreements by vendor",
+      "按供应商查协议",
+      "vendor contracts",
+      "查长协清单",
+      "sa by supplier"
+    ],
+    "aliases": [
+      "show all contracts for vendor",
+      "这家供应商签了哪些长协",
+      "导出某家的计划协议"
+    ],
+    "scenario": [
+      "Reviewing a vendor's performance, buyer pulls a list of all their active agreements",
+      "跟供应商开年会前，把系统里和他们签的所有长期协议和框架合同都拉出来"
+    ],
+    "inputs": [
+      "Vendor number"
+    ],
+    "outputs": [
+      "List of agreements for vendor"
+    ],
+    "category": "Report",
+    "priority": "Low"
   },
   {
     "id": 57,
@@ -565,9 +2539,41 @@
     "desc": "Outline Agreements by Material (按物料查询框架协议)",
     "module": "Purchasing",
     "type": "Report",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "列出涵盖特定物料的所有框架协议",
-    "related": [{"code": "ME3L", "label": "按供应商查询"}]
+    "related": [
+      {
+        "code": "ME3L",
+        "label": "按供应商查询"
+      }
+    ],
+    "keywords": [
+      "agreements by material",
+      "按物料查协议",
+      "material contracts",
+      "物料长协报表",
+      "sa by material"
+    ],
+    "aliases": [
+      "find sa for material",
+      "这个料挂在哪个协议下",
+      "看看这颗料的长协"
+    ],
+    "scenario": [
+      "Planner needs to know which scheduling agreement is driving the delivery lines for a part",
+      "计划员查件没来，想看下这个物料背后到底绑的哪个排程协议单号"
+    ],
+    "inputs": [
+      "Material number"
+    ],
+    "outputs": [
+      "List of agreements containing the material"
+    ],
+    "category": "Report",
+    "priority": "Low"
   },
   {
     "id": 58,
@@ -575,9 +2581,43 @@
     "desc": "Purchase Requisitions: List Display (采购申请清单显示)",
     "module": "Purchasing",
     "type": "Report",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "按多种条件筛选和查看采购申请状态",
-    "related": [{"code": "ME53N", "label": "显示 PR"}]
+    "related": [
+      {
+        "code": "ME53N",
+        "label": "显示 PR"
+      }
+    ],
+    "keywords": [
+      "pr list",
+      "采购申请清单",
+      "open prs",
+      "查pr报表",
+      "requisition tracking"
+    ],
+    "aliases": [
+      "how to track open pr",
+      "我名下还有多少未转po的购请",
+      "导个pr清单"
+    ],
+    "scenario": [
+      "Buyer pulls a list of all unassigned or open PRs to start working on PO creation",
+      "采购上班第一件事，拉一下名下所有还没转成订单的Open PR清单开始干活"
+    ],
+    "inputs": [
+      "Purchasing group",
+      "Plant",
+      "Processing status"
+    ],
+    "outputs": [
+      "ALV report of PRs"
+    ],
+    "category": "Report",
+    "priority": "Medium"
   },
   {
     "id": 59,
@@ -585,9 +2625,41 @@
     "desc": "Purchase Orders by PO Number (按采购订单号查询)",
     "module": "Purchasing",
     "type": "Report",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "通过订单号检索 PO 清单",
-    "related": [{"code": "ME2L", "label": "按供应商查询 PO"}]
+    "related": [
+      {
+        "code": "ME2L",
+        "label": "按供应商查询 PO"
+      }
+    ],
+    "keywords": [
+      "po list by number",
+      "按订单号查po",
+      "po tracking",
+      "采购订单报表",
+      "find po"
+    ],
+    "aliases": [
+      "list po details",
+      "拉一下这几个单号的明细",
+      "按po查"
+    ],
+    "scenario": [
+      "User has a list of 10 PO numbers and wants to see their collective details and GR status",
+      "手里有十几个订单号，想要批量查一下这批订单现在的收货入库状态"
+    ],
+    "inputs": [
+      "PO numbers (multiple)"
+    ],
+    "outputs": [
+      "List of PO lines and status"
+    ],
+    "category": "Report",
+    "priority": "Low"
   },
   {
     "id": 60,
@@ -595,9 +2667,42 @@
     "desc": "Purchase Orders by Vendor (按供应商查询采购订单)",
     "module": "Purchasing",
     "type": "Report",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "查看分配给特定供应商的所有订单",
-    "related": [{"code": "ME23N", "label": "显示 PO"}]
+    "related": [
+      {
+        "code": "ME23N",
+        "label": "显示 PO"
+      }
+    ],
+    "keywords": [
+      "po by vendor",
+      "按供应商查po",
+      "vendor orders",
+      "查某家单子",
+      "open po for supplier"
+    ],
+    "aliases": [
+      "how many orders with this vendor",
+      "欠这家多少货没交",
+      "导这家供应商的open单"
+    ],
+    "scenario": [
+      "Buyer calls a vendor to expedite deliveries, needs a list of all their open orders",
+      "要给供应商打电话催交货，先把这家所有没交齐的Open PO导出来做个表"
+    ],
+    "inputs": [
+      "Vendor number",
+      "Selection parameter (e.g., WE101 for open GR)"
+    ],
+    "outputs": [
+      "ALV of Vendor's POs"
+    ],
+    "category": "Report",
+    "priority": "Medium"
   },
   {
     "id": 61,
@@ -605,9 +2710,48 @@
     "desc": "MRP list (MRP 清单)",
     "module": "Planning",
     "type": "Report",
-    "roles": ["Buyer", "PD", "PPD"],
+    "roles": [
+      "Buyer",
+      "PD",
+      "PPD"
+    ],
     "tip": "查询物料需求计划的静态运行结果",
-    "related": [{"code": "YMFMSRL", "label": "库存/需求清单"}, {"code": "ZZPBD09S", "label": "BOM 展开"}]
+    "related": [
+      {
+        "code": "YMFMSRL",
+        "label": "库存/需求清单"
+      },
+      {
+        "code": "ZZPBD09S",
+        "label": "BOM 展开"
+      }
+    ],
+    "keywords": [
+      "mrp list",
+      "mrp清单",
+      "material requirements",
+      "查需求",
+      "静态mrp"
+    ],
+    "aliases": [
+      "check mrp results",
+      "看下昨天晚上跑的mrp",
+      "为啥没跑出需求",
+      "mrp calculation"
+    ],
+    "scenario": [
+      "Planner checks the static snapshot of requirements from last night's MRP run",
+      "计划员检查昨天夜间MRP运算跑出来的静态结果，看为啥系统提示要催货"
+    ],
+    "inputs": [
+      "Material",
+      "Plant"
+    ],
+    "outputs": [
+      "Static MRP elements list"
+    ],
+    "category": "Report",
+    "priority": "Low"
   },
   {
     "id": 62,
@@ -615,9 +2759,43 @@
     "desc": "Stock/requiremnet list (库存/需求清单定制版)",
     "module": "Planning",
     "type": "Report",
-    "roles": ["Buyer", "PD", "PPD"],
+    "roles": [
+      "Buyer",
+      "PD",
+      "PPD"
+    ],
     "tip": "动态查看物料当前的供需及库存状况",
-    "related": [{"code": "MD05", "label": "MRP 清单"}]
+    "related": [
+      {
+        "code": "MD05",
+        "label": "MRP 清单"
+      }
+    ],
+    "keywords": [
+      "stock requirement list",
+      "库存需求清单",
+      "md04",
+      "动态供需",
+      "查库存和交货期"
+    ],
+    "aliases": [
+      "check stock balance",
+      "看下这颗料现在几号会断点",
+      "定制版供需情况"
+    ],
+    "scenario": [
+      "User looks at the real-time dynamic balance of current stock vs upcoming demands and incoming deliveries",
+      "想实时看下当前库存有多少，后面的生产需求有多少，采购的货哪天能送来补上"
+    ],
+    "inputs": [
+      "Material",
+      "Plant"
+    ],
+    "outputs": [
+      "Dynamic timeline of supply and demand"
+    ],
+    "category": "Report",
+    "priority": "Medium"
   },
   {
     "id": 63,
@@ -625,9 +2803,41 @@
     "desc": "BOM explosion for model and assy (模型及组件 BOM 展开)",
     "module": "Master Data",
     "type": "Report",
-    "roles": ["PPD"],
+    "roles": [
+      "PPD"
+    ],
     "tip": "以层级结构展开物料清单(BOM)",
-    "related": [{"code": "MD05", "label": "MRP 清单"}]
+    "related": [
+      {
+        "code": "MD05",
+        "label": "MRP 清单"
+      }
+    ],
+    "keywords": [
+      "bom explosion",
+      "bom展开",
+      "bill of materials",
+      "查bom结构",
+      "组件清单"
+    ],
+    "aliases": [
+      "expand bom",
+      "这个总成下面有哪些子件",
+      "拉个整车bom"
+    ],
+    "scenario": [
+      "Engineer needs to see all the sub-components that make up a final assembly",
+      "工艺想看看这个大总成件往下逐层拆解到底包含哪些小零件"
+    ],
+    "inputs": [
+      "Parent material",
+      "Plant"
+    ],
+    "outputs": [
+      "Hierarchical BOM list"
+    ],
+    "category": "Report",
+    "priority": "Low"
   },
   {
     "id": 64,
@@ -635,9 +2845,41 @@
     "desc": "APQP PSW file copy (APQP PSW 文件复制)",
     "module": "Quality",
     "type": "Action",
-    "roles": ["SD"],
+    "roles": [
+      "SD"
+    ],
     "tip": "复制零件提交保证书(PSW)相关文件数据",
-    "related": [{"code": "ZMFM050035", "label": "APQP 清单"}]
+    "related": [
+      {
+        "code": "ZMFM050035",
+        "label": "APQP 清单"
+      }
+    ],
+    "keywords": [
+      "psw file copy",
+      "psw复制",
+      "apqp docs",
+      "克隆psw文件",
+      "ppap copy"
+    ],
+    "aliases": [
+      "copy psw records",
+      "怎么把去年的psw文件直接拷过来",
+      "复用psw资料"
+    ],
+    "scenario": [
+      "A similar part is sourced, SQE copies the existing PSW files to the new record to save time",
+      "同一家供应商做的沿用件，SQE直接把历史的零件保证书(PSW)附件复制过来"
+    ],
+    "inputs": [
+      "Source part/project",
+      "Target part"
+    ],
+    "outputs": [
+      "Copied file attachments"
+    ],
+    "category": "Maintenance",
+    "priority": "Low"
   },
   {
     "id": 65,
@@ -645,9 +2887,40 @@
     "desc": "APQP Summary Report (APQP 汇总报告)",
     "module": "Quality",
     "type": "Report",
-    "roles": ["SD"],
+    "roles": [
+      "SD"
+    ],
     "tip": "导出质量先期策划进度的综合报表",
-    "related": [{"code": "ZMFM050035", "label": "APQP 清单"}]
+    "related": [
+      {
+        "code": "ZMFM050035",
+        "label": "APQP 清单"
+      }
+    ],
+    "keywords": [
+      "apqp summary",
+      "apqp汇总报告",
+      "质量进度报表",
+      "ppap dashboard",
+      "project quality status"
+    ],
+    "aliases": [
+      "export apqp status",
+      "拉一个项目整体的质量进度看板",
+      "看汇总报告"
+    ],
+    "scenario": [
+      "Management prepares for a gate review and needs a high-level summary of APQP completion rates",
+      "项目过节点开阀门会议前，管理层需要看一张APQP整体完成率的饼图或报表"
+    ],
+    "inputs": [
+      "Project identifier"
+    ],
+    "outputs": [
+      "Summary report/dashboard"
+    ],
+    "category": "Report",
+    "priority": "Medium"
   },
   {
     "id": 66,
@@ -655,9 +2928,41 @@
     "desc": "Maintain Commodity Code (维护商品代码-定制)",
     "module": "Master Data",
     "type": "Action",
-    "roles": ["Buyer"],
+    "roles": [
+      "Buyer"
+    ],
     "tip": "定制事务代码用于更新商品分类信息",
-    "related": [{"code": "MM02", "label": "维护商品代码"}]
+    "related": [
+      {
+        "code": "MM02",
+        "label": "维护商品代码"
+      }
+    ],
+    "keywords": [
+      "custom commodity code",
+      "定制商品代码",
+      "hs code maintenance",
+      "维护海关编码",
+      "分类代码"
+    ],
+    "aliases": [
+      "update hs code",
+      "关务要求的那个代码在哪改",
+      "定制入口改商品码"
+    ],
+    "scenario": [
+      "Customs code rules change, buyer uses the custom transaction to quickly update commodity mappings",
+      "海关编码库有更新，采购用这个自建程序给物料快速打上最新的商品代码标签"
+    ],
+    "inputs": [
+      "Material",
+      "New commodity code"
+    ],
+    "outputs": [
+      "Updated material master"
+    ],
+    "category": "Maintenance",
+    "priority": "Medium"
   },
   {
     "id": 67,
@@ -665,9 +2970,46 @@
     "desc": "Vendor master, Contact mass update (供应商主数据与联系人批量更新)",
     "module": "Master Data",
     "type": "Action",
-    "roles": ["Buyer"],
+    "roles": [
+      "Buyer"
+    ],
     "tip": "大批量更新供应商通讯录和基础信息",
-    "related": [{"code": "BP", "label": "供应商主数据"}, {"code": "XK99", "label": "批量维护供应商"}]
+    "related": [
+      {
+        "code": "BP",
+        "label": "供应商主数据"
+      },
+      {
+        "code": "XK99",
+        "label": "批量维护供应商"
+      }
+    ],
+    "keywords": [
+      "vendor mass update",
+      "供应商批量更新",
+      "contact update",
+      "批量改联系人",
+      "mass edit vendor"
+    ],
+    "aliases": [
+      "batch update supplier contacts",
+      "怎么一次性换掉这批供应商的联系电话",
+      "大批量刷供应商数据"
+    ],
+    "scenario": [
+      "Vendor changed their key account manager, buyer mass updates the contact details across all purchasing orgs",
+      "供应商换了业务员，采购在系统里把他们所有的邮箱和电话批量刷一遍"
+    ],
+    "inputs": [
+      "Vendor list",
+      "New contact details"
+    ],
+    "outputs": [
+      "Updated vendor masters",
+      "Upload log"
+    ],
+    "category": "Maintenance",
+    "priority": "Medium"
   },
   {
     "id": 68,
@@ -675,9 +3017,41 @@
     "desc": "Mass maintenance, vendor master (批量维护供应商主数据)",
     "module": "Master Data",
     "type": "Action",
-    "roles": ["Buyer"],
+    "roles": [
+      "Buyer"
+    ],
     "tip": "标准系统提供的多维度供应商大批量修改工具",
-    "related": [{"code": "ZMFMVMUPD", "label": "联系人批量更新"}]
+    "related": [
+      {
+        "code": "ZMFMVMUPD",
+        "label": "联系人批量更新"
+      }
+    ],
+    "keywords": [
+      "xk99",
+      "mass maintenance vendor",
+      "批量维护供应商",
+      "大批量改主数据",
+      "standard mass update"
+    ],
+    "aliases": [
+      "how to use xk99",
+      "怎么用xk99批量改付款条件",
+      "标准工具改供应商"
+    ],
+    "scenario": [
+      "Payment terms for 100 vendors need to change to 60 days, user uses XK99 to do it in one go",
+      "公司政策要求把100家供应商的付款条件全改成60天，用XK99表级批量修改"
+    ],
+    "inputs": [
+      "Table selection (e.g., LFM1)",
+      "New field values"
+    ],
+    "outputs": [
+      "Mass updated records"
+    ],
+    "category": "Maintenance",
+    "priority": "High"
   },
   {
     "id": 69,
@@ -685,9 +3059,41 @@
     "desc": "Mass-Changing of Purch. Info Records (批量修改采购信息记录)",
     "module": "Master Data",
     "type": "Action",
-    "roles": ["Buyer"],
+    "roles": [
+      "Buyer"
+    ],
     "tip": "一次性调整多条采购信息记录的字段值",
-    "related": [{"code": "ME12", "label": "单条修改信息记录"}]
+    "related": [
+      {
+        "code": "ME12",
+        "label": "单条修改信息记录"
+      }
+    ],
+    "keywords": [
+      "mass change info record",
+      "批量修改信息记录",
+      "mass pir update",
+      "批量改单价条件",
+      "memassin"
+    ],
+    "aliases": [
+      "how to mass update price",
+      "怎么批量把交货期改掉",
+      "批量刷info record"
+    ],
+    "scenario": [
+      "Global tax code changes, buyer mass updates the tax code field on 500 info records",
+      "税率调整了，需要把名下几百条价格记录的税码批量刷新一下"
+    ],
+    "inputs": [
+      "List of Info records",
+      "Field to change (e.g., Tax code, Planned delivery time)"
+    ],
+    "outputs": [
+      "Mass update execution log"
+    ],
+    "category": "Maintenance",
+    "priority": "High"
   },
   {
     "id": 70,
@@ -695,9 +3101,42 @@
     "desc": "Materail Doc List (物料凭证清单)",
     "module": "Inventory",
     "type": "Report",
-    "roles": ["Manager"],
+    "roles": [
+      "Manager"
+    ],
     "tip": "查看收发货等历史物料移动凭证记录",
-    "related": [{"code": "MIGO", "label": "货物移动"}]
+    "related": [
+      {
+        "code": "MIGO",
+        "label": "货物移动"
+      }
+    ],
+    "keywords": [
+      "mb51",
+      "material doc list",
+      "物料凭证清单",
+      "查出入库记录",
+      "movement history"
+    ],
+    "aliases": [
+      "check gr history",
+      "看看这批货到底收进来了没",
+      "拉收发货明细表"
+    ],
+    "scenario": [
+      "Accountant wants to verify all goods receipts for a vendor in the last month to clear invoices",
+      "财务对账，拉出上个月某个供应商所有的入库(GR)物料凭证清单来核对"
+    ],
+    "inputs": [
+      "Plant",
+      "Material",
+      "Movement type (e.g., 101)"
+    ],
+    "outputs": [
+      "List of material documents"
+    ],
+    "category": "Report",
+    "priority": "High"
   },
   {
     "id": 71,
@@ -705,9 +3144,41 @@
     "desc": "Mass Changing of Sched. Agreements (批量修改计划协议)",
     "module": "Purchasing",
     "type": "Action",
-    "roles": ["Buyer"],
+    "roles": [
+      "Buyer"
+    ],
     "tip": "针对长期交货协议的批量内容修改",
-    "related": [{"code": "ME32L", "label": "修改计划协议"}]
+    "related": [
+      {
+        "code": "ME32L",
+        "label": "修改计划协议"
+      }
+    ],
+    "keywords": [
+      "mass change sa",
+      "批量修改计划协议",
+      "bulk update agreement",
+      "批量改长协",
+      "memasssa"
+    ],
+    "aliases": [
+      "extend multiple sa",
+      "几十个长协怎么一起延期",
+      "批量改排程协议的参数"
+    ],
+    "scenario": [
+      "Need to update the purchasing group code on 50 different scheduling agreements",
+      "采购员岗位调整，需要把几十个排程长协里的采购组代码批量换成新人的"
+    ],
+    "inputs": [
+      "List of SA numbers",
+      "Target field and new value"
+    ],
+    "outputs": [
+      "Updated agreements log"
+    ],
+    "category": "Maintenance",
+    "priority": "Medium"
   },
   {
     "id": 72,
@@ -715,9 +3186,41 @@
     "desc": "Maintain Viva User Report (维护 VIVA 用户报表)",
     "module": "SD Custom",
     "type": "Report",
-    "roles": ["SD"],
+    "roles": [
+      "SD"
+    ],
     "tip": "管理 VIVA 系统的用户和权限相关报表",
-    "related": [{"code": "ZVZ3", "label": "VIVA 通知管理"}]
+    "related": [
+      {
+        "code": "ZVZ3",
+        "label": "VIVA 通知管理"
+      }
+    ],
+    "keywords": [
+      "viva user report",
+      "viva用户报表",
+      "maintain viva",
+      "系统用户管理",
+      "user list"
+    ],
+    "aliases": [
+      "check viva users",
+      "导个viva系统人员名单",
+      "viva权限报表"
+    ],
+    "scenario": [
+      "System admin reviews the list of active users in the custom VIVA portal",
+      "系统管理员做季度盘点，拉出一份当前VIVA系统的活跃用户及权限报表"
+    ],
+    "inputs": [
+      "Company code",
+      "Role parameters"
+    ],
+    "outputs": [
+      "VIVA user report"
+    ],
+    "category": "Report",
+    "priority": "Low"
   },
   {
     "id": 73,
@@ -725,9 +3228,41 @@
     "desc": "VIVA- Notice management (VIVA 通知管理)",
     "module": "SD Custom",
     "type": "Action",
-    "roles": ["SD"],
+    "roles": [
+      "SD"
+    ],
     "tip": "管理 VIVA 业务流程中的通知分发",
-    "related": [{"code": "ZVA2", "label": "VIVA 用户报表"}]
+    "related": [
+      {
+        "code": "ZVA2",
+        "label": "VIVA 用户报表"
+      }
+    ],
+    "keywords": [
+      "viva notice",
+      "viva通知管理",
+      "notice management",
+      "发系统通知",
+      "viva alerts"
+    ],
+    "aliases": [
+      "send viva alert",
+      "怎么在viva发全员公告",
+      "管理系统提示"
+    ],
+    "scenario": [
+      "Admin broadcasts a system maintenance notice to all VIVA users",
+      "周末系统要停机升版，管理员通过通知管理下发一条跑马灯公告"
+    ],
+    "inputs": [
+      "Notice text",
+      "Target audience"
+    ],
+    "outputs": [
+      "Broadcasted notice"
+    ],
+    "category": "Maintenance",
+    "priority": "Low"
   },
   {
     "id": 74,
@@ -735,9 +3270,41 @@
     "desc": "Upload Vendor - Supplier Host (上传供应商-主机厂关系)",
     "module": "Master Data",
     "type": "Action",
-    "roles": ["Buyer"],
+    "roles": [
+      "Buyer"
+    ],
     "tip": "批量导入主机厂与供应商的映射关系",
-    "related": [{"code": "ZMFMHOST", "label": "维护供应商主机厂"}]
+    "related": [
+      {
+        "code": "ZMFMHOST",
+        "label": "维护供应商主机厂"
+      }
+    ],
+    "keywords": [
+      "upload vendor host",
+      "上传供应商主机厂",
+      "mass host mapping",
+      "批量导主机厂关系",
+      "oem upload"
+    ],
+    "aliases": [
+      "batch map oem",
+      "把这份excel的关系导进去",
+      "批量维护主机厂映射"
+    ],
+    "scenario": [
+      "A new plant opens and 200 vendor-to-host relationships need to be loaded from Excel",
+      "新工厂建立，有几百条供应商对应的主机厂关系需要用表格批量导入系统"
+    ],
+    "inputs": [
+      "Excel upload file"
+    ],
+    "outputs": [
+      "Mapping records created",
+      "Upload success log"
+    ],
+    "category": "Maintenance",
+    "priority": "Medium"
   },
   {
     "id": 75,
@@ -745,9 +3312,41 @@
     "desc": "Compare Prices between Plants (工厂间比价)",
     "module": "Sourcing",
     "type": "Report",
-    "roles": ["PPD"],
+    "roles": [
+      "PPD"
+    ],
     "tip": "比较同一物料在不同工厂或供应商处的采购价格",
-    "related": [{"code": "ZMFM050012", "label": "目标成本"}]
+    "related": [
+      {
+        "code": "ZMFM050012",
+        "label": "目标成本"
+      }
+    ],
+    "keywords": [
+      "compare prices",
+      "工厂间比价",
+      "plant price comparison",
+      "价格对比表",
+      "cross plant cost"
+    ],
+    "aliases": [
+      "why is this plant more expensive",
+      "看下几个工厂的采购单价差异",
+      "拉个横向比价表"
+    ],
+    "scenario": [
+      "Sourcing manager compares why the same bearing costs more in Plant A than Plant B",
+      "采购总监想要横向对比同一个轴承在不同基地采购的单价差异在哪里"
+    ],
+    "inputs": [
+      "Material number",
+      "Plant codes"
+    ],
+    "outputs": [
+      "Side-by-side price comparison"
+    ],
+    "category": "Report",
+    "priority": "Medium"
   },
   {
     "id": 76,
@@ -755,9 +3354,48 @@
     "desc": "Create Material (创建物料)",
     "module": "Master Data",
     "type": "Action",
-    "roles": ["Buyer", "PD"],
+    "roles": [
+      "Buyer",
+      "PD"
+    ],
     "tip": "新建物料主数据",
-    "related": [{"code": "MM02", "label": "修改物料"}, {"code": "MM03", "label": "显示物料"}]
+    "related": [
+      {
+        "code": "MM02",
+        "label": "修改物料"
+      },
+      {
+        "code": "MM03",
+        "label": "显示物料"
+      }
+    ],
+    "keywords": [
+      "create material",
+      "创建物料",
+      "mm01",
+      "建料号",
+      "new material master"
+    ],
+    "aliases": [
+      "how to create part number",
+      "怎么申请新料号",
+      "扩充物料视图",
+      "create part in sap"
+    ],
+    "scenario": [
+      "Engineering releases a new part, master data team creates the basic and purchasing views",
+      "研发发了新图纸，主数据专员在系统里跑MM01建一个新的物料号并扩充采购视图"
+    ],
+    "inputs": [
+      "Material type",
+      "Industry sector",
+      "Descriptions/UOM"
+    ],
+    "outputs": [
+      "Generated Material Number"
+    ],
+    "category": "Creation",
+    "priority": "High"
   },
   {
     "id": 77,
@@ -765,9 +3403,41 @@
     "desc": "Materail Master List (物料主数据清单)",
     "module": "Master Data",
     "type": "Report",
-    "roles": ["PD"],
+    "roles": [
+      "PD"
+    ],
     "tip": "输出物料主数据的全量/过滤报表",
-    "related": [{"code": "MM03", "label": "显示物料"}]
+    "related": [
+      {
+        "code": "MM03",
+        "label": "显示物料"
+      }
+    ],
+    "keywords": [
+      "material master list",
+      "物料主数据清单",
+      "查物料表",
+      "material report",
+      "list of parts"
+    ],
+    "aliases": [
+      "export all materials",
+      "把我们厂的物料全导出来",
+      "拉一个定制的物料清单"
+    ],
+    "scenario": [
+      "Inventory manager pulls a list of all raw materials mapped to a specific storage location",
+      "仓储经理想要导出一份属于某个库位组的所有原材料清单目录"
+    ],
+    "inputs": [
+      "Plant",
+      "Material type"
+    ],
+    "outputs": [
+      "ALV report of materials"
+    ],
+    "category": "Report",
+    "priority": "Low"
   },
   {
     "id": 78,
@@ -775,9 +3445,41 @@
     "desc": "PDS Report (PDS 报表)",
     "module": "System Admin",
     "type": "Report",
-    "roles": ["PD"],
+    "roles": [
+      "PD"
+    ],
     "tip": "定制的 PDS 模块综合报表",
-    "related": [{"code": "YMGLAUMG", "label": "PDS 用户维护"}]
+    "related": [
+      {
+        "code": "YMGLAUMG",
+        "label": "PDS 用户维护"
+      }
+    ],
+    "keywords": [
+      "pds report",
+      "pds报表",
+      "综合系统报表",
+      "pds dashboard",
+      "admin report"
+    ],
+    "aliases": [
+      "check pds metrics",
+      "跑一下pds的后台数据",
+      "拉系统定制报表"
+    ],
+    "scenario": [
+      "Admin reviews system usage or specific module data aggregated in the PDS custom report",
+      "管理员月末检查定制化PDS模块的数据流转情况并生成综合报表"
+    ],
+    "inputs": [
+      "Date range",
+      "Report variants"
+    ],
+    "outputs": [
+      "Aggregated PDS data view"
+    ],
+    "category": "Report",
+    "priority": "Low"
   },
   {
     "id": 79,
@@ -785,9 +3487,41 @@
     "desc": "Indicator Maintain (指标/标识维护)",
     "module": "System Admin",
     "type": "Config",
-    "roles": ["PD"],
+    "roles": [
+      "PD"
+    ],
     "tip": "系统后台自定义标识和控制参数的维护",
-    "related": [{"code": "ZMFM050080", "label": "PDS 报表"}]
+    "related": [
+      {
+        "code": "ZMFM050080",
+        "label": "PDS 报表"
+      }
+    ],
+    "keywords": [
+      "indicator maintain",
+      "指标维护",
+      "标识维护",
+      "system parameters",
+      "config indicators"
+    ],
+    "aliases": [
+      "change system flags",
+      "系统后台的开关在哪控制",
+      "维护自定义参数"
+    ],
+    "scenario": [
+      "System admin toggles a custom feature flag or updates a threshold parameter",
+      "IT管理员在后台表里调整某个业务逻辑的控制开关或阈值指标"
+    ],
+    "inputs": [
+      "Indicator ID",
+      "Value/Flag"
+    ],
+    "outputs": [
+      "Updated system configuration"
+    ],
+    "category": "Config",
+    "priority": "Medium"
   },
   {
     "id": 80,
@@ -795,9 +3529,41 @@
     "desc": "PDS User Maintenance (PDS 用户维护)",
     "module": "System Admin",
     "type": "Config",
-    "roles": ["PD"],
+    "roles": [
+      "PD"
+    ],
     "tip": "管理 PDS 系统特定角色的用户权限分配",
-    "related": [{"code": "SU01D", "label": "用户显示"}]
+    "related": [
+      {
+        "code": "SU01D",
+        "label": "用户显示"
+      }
+    ],
+    "keywords": [
+      "pds user maintenance",
+      "pds用户维护",
+      "user rights",
+      "角色分配",
+      "manage pds accounts"
+    ],
+    "aliases": [
+      "give access to pds",
+      "给新人开一下pds权限",
+      "维护系统账号组"
+    ],
+    "scenario": [
+      "A new buyer joins, admin assigns them the appropriate role in the PDS application",
+      "新来了一个采购，IT帮他把账号加到PDS对应业务模块的用户组里"
+    ],
+    "inputs": [
+      "User ID",
+      "Role/Profile assignment"
+    ],
+    "outputs": [
+      "Granted PDS access"
+    ],
+    "category": "Config",
+    "priority": "Medium"
   },
   {
     "id": 81,
@@ -805,9 +3571,36 @@
     "desc": "Maintain Buyer code (维护买方代码)",
     "module": "System Admin",
     "type": "Config",
-    "roles": ["PD"],
+    "roles": [
+      "PD"
+    ],
     "tip": "系统内采购员标识代码的对应关系维护",
-    "related": []
+    "related": [],
+    "keywords": [
+      "maintain buyer code",
+      "维护买方代码",
+      "buyer id",
+      "采购组映射",
+      "purchasing group config"
+    ],
+    "aliases": [
+      "create new buyer code",
+      "建一个新的采购代码",
+      "把人跟代码绑起来"
+    ],
+    "scenario": [
+      "A new purchasing group is created, admin links the new buyer code to the system tables",
+      "成立了新的采购科室，管理员需要在后台新建一个对应的买方(采购员)代码"
+    ],
+    "inputs": [
+      "Buyer code",
+      "Description"
+    ],
+    "outputs": [
+      "Active buyer code mapping"
+    ],
+    "category": "Config",
+    "priority": "Medium"
   },
   {
     "id": 82,
@@ -815,9 +3608,41 @@
     "desc": "Maintain Approval Level - PCA (维护审批层级-PCA)",
     "module": "System Admin",
     "type": "Config",
-    "roles": ["PD"],
+    "roles": [
+      "PD"
+    ],
     "tip": "配置 PCA 流程的审批人矩阵和授权级别",
-    "related": [{"code": "ZMFM0011", "label": "创建 PCA"}]
+    "related": [
+      {
+        "code": "ZMFM0011",
+        "label": "创建 PCA"
+      }
+    ],
+    "keywords": [
+      "maintain approval level",
+      "维护审批层级",
+      "pca workflow config",
+      "审批矩阵",
+      "approval matrix"
+    ],
+    "aliases": [
+      "change approver",
+      "领导换人了审批流怎么改",
+      "配置pca审批树"
+    ],
+    "scenario": [
+      "Department head changes, admin updates the PCA approval routing to the new manager",
+      "部门换了新总监，管理员去后台把PCA审批流里的层级节点换成新领导的账号"
+    ],
+    "inputs": [
+      "Approval level",
+      "Approver user ID"
+    ],
+    "outputs": [
+      "Updated workflow routing"
+    ],
+    "category": "Config",
+    "priority": "High"
   },
   {
     "id": 83,
@@ -825,9 +3650,36 @@
     "desc": "Table Browser (数据表浏览器)",
     "module": "System Admin",
     "type": "Report",
-    "roles": ["PD"],
+    "roles": [
+      "PD"
+    ],
     "tip": "定制版的数据表直接查询工具(类似 SE16)",
-    "related": []
+    "related": [],
+    "keywords": [
+      "table browser",
+      "数据表浏览器",
+      "se16",
+      "查底层表",
+      "database viewer"
+    ],
+    "aliases": [
+      "look at raw table",
+      "直接进表里看看数据",
+      "用ztbl拉张底表"
+    ],
+    "scenario": [
+      "IT or superuser needs to inspect raw database entries for a specific purchasing document to debug an issue",
+      "系统报错，运维人员直接用这工具穿透到底层去看物料表的原始字段值对不对"
+    ],
+    "inputs": [
+      "Table name",
+      "Selection criteria"
+    ],
+    "outputs": [
+      "Raw database table view"
+    ],
+    "category": "Report",
+    "priority": "Low"
   },
   {
     "id": 84,
@@ -835,9 +3687,40 @@
     "desc": "User Display (用户显示)",
     "module": "System Admin",
     "type": "Report",
-    "roles": ["PD"],
+    "roles": [
+      "PD"
+    ],
     "tip": "查询系统 SAP 账号的信息及权限参数",
-    "related": [{"code": "YMGLAUMG", "label": "PDS 用户维护"}]
+    "related": [
+      {
+        "code": "YMGLAUMG",
+        "label": "PDS 用户维护"
+      }
+    ],
+    "keywords": [
+      "user display",
+      "用户显示",
+      "su01d",
+      "查账号权限",
+      "account details"
+    ],
+    "aliases": [
+      "check user roles",
+      "查一下我的账号有什么角色",
+      "看别人的权限"
+    ],
+    "scenario": [
+      "User claims they cannot create a PO, admin uses SU01D to verify their assigned roles",
+      "业务抱怨点不开某个按钮，IT查一下他的账号是不是少挂了什么权限参数"
+    ],
+    "inputs": [
+      "SAP User ID"
+    ],
+    "outputs": [
+      "User profile details (Read-only)"
+    ],
+    "category": "Display",
+    "priority": "Low"
   },
   {
     "id": 85,
@@ -845,9 +3728,41 @@
     "desc": "Vendor Confirmation Report (供应商确认报表)",
     "module": "Master Data",
     "type": "Report",
-    "roles": ["PD"],
+    "roles": [
+      "PD"
+    ],
     "tip": "监控供应商对发出的询价或协议的确认状态",
-    "related": [{"code": "BP", "label": "供应商主数据"}]
+    "related": [
+      {
+        "code": "BP",
+        "label": "供应商主数据"
+      }
+    ],
+    "keywords": [
+      "vendor confirmation",
+      "供应商确认报表",
+      "supplier acknowledgment",
+      "查订单确认状态",
+      "confirmation report"
+    ],
+    "aliases": [
+      "who did not confirm",
+      "哪些单子供应商还没回签",
+      "跟踪供应商确认"
+    ],
+    "scenario": [
+      "Buyer needs to see which vendors have not yet acknowledged the newly issued POs",
+      "采购发了一批订单，拉个表看看哪几家供应商至今还没在系统里点确认回传"
+    ],
+    "inputs": [
+      "Date range",
+      "Purchasing document type"
+    ],
+    "outputs": [
+      "List of unconfirmed documents"
+    ],
+    "category": "Report",
+    "priority": "Medium"
   },
   {
     "id": 86,
@@ -855,8 +3770,40 @@
     "desc": "Mass Firm Zone Update (批量确定区域更新)",
     "module": "Planning",
     "type": "Action",
-    "roles": ["PD"],
+    "roles": [
+      "PD"
+    ],
     "tip": "批量刷新计划协议中的交货确定周期区",
-    "related": [{"code": "MEMASSSA", "label": "批量修改计划协议"}]
+    "related": [
+      {
+        "code": "MEMASSSA",
+        "label": "批量修改计划协议"
+      }
+    ],
+    "keywords": [
+      "mass firm zone update",
+      "批量确定区域更新",
+      "firm zone",
+      "固化期",
+      "更新排程冻结期"
+    ],
+    "aliases": [
+      "update frozen period",
+      "怎么批量把交货冻结期改了",
+      "刷新firm zone"
+    ],
+    "scenario": [
+      "Supply chain policy changes the frozen delivery window from 2 weeks to 4 weeks, requires mass update",
+      "公司政策把MRP排程的锁定固化期从2周改成了4周，需要跑程序全量刷新所有协议"
+    ],
+    "inputs": [
+      "Plant",
+      "New firm zone days"
+    ],
+    "outputs": [
+      "Updated firm zone parameters in SAs"
+    ],
+    "category": "Maintenance",
+    "priority": "Medium"
   }
 ]

@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 
 // --- 类型定义 ---
-
 interface ParsedResult {
   id: string;
   title: string;
@@ -32,11 +31,11 @@ interface ParsedResult {
 interface FileItem {
   id: string;
   file: File;
-  status: 'pending' | 'extracting' | 'converting' | 'capturing' | 'analyzing' | 'success' | 'error';
+  status: 'pending' | 'extracting' | 'capturing' | 'analyzing' | 'success' | 'error';
   result?: ParsedResult;
   errorMsg?: string;
   retryCount: number;
-  skipVisual?: boolean; // 新增标记：是否跳过视觉快照（由于环境不支持）
+  skipVisual?: boolean;
 }
 
 interface ModelOption {
@@ -48,9 +47,9 @@ interface ModelOption {
 }
 
 const AVAILABLE_MODELS: ModelOption[] = [
-  { id: 'qwen-turbo', name: '极速模式', desc: '处理最快，适合 200+ 批量', icon: Zap, color: 'text-yellow-500' },
-  { id: 'qwen-plus', name: '标准模式', desc: '能力均衡，推荐使用', icon: Cpu, color: 'text-blue-500' },
-  { id: 'qwen-max', name: '最强模式', desc: '逻辑最强，适合复杂PPT', icon: Sparkles, color: 'text-purple-500' },
+  { id: 'qwen3.5-plus', name: '极速模式', desc: '处理最快，适合 200+ 批量', icon: Zap, color: 'text-yellow-500' },
+  { id: 'qwen3.6-plus', name: '标准模式', desc: '能力均衡，推荐使用', icon: Cpu, color: 'text-blue-500' },
+  { id: 'qwen3-max-2026-01-23', name: '最强模式', desc: '逻辑最强，适合复杂PPT', icon: Sparkles, color: 'text-purple-500' },
 ];
 
 export default function AnalysisPage() {
@@ -63,8 +62,7 @@ export default function AnalysisPage() {
   const [searchTerm, setSearchTerm] = useState('');
   
   const supabaseRef = useRef<any>(null);
-
-  const CONCURRENCY_LIMIT = 3; 
+  const CONCURRENCY_LIMIT = 5; 
   const MAX_RETRIES = 1;
 
   // --- 1. 动态加载库与 Worker 初始化 ---
@@ -97,37 +95,14 @@ export default function AnalysisPage() {
     loadScripts();
   }, []);
 
-  // --- 2. 核心转换逻辑：调用后端 Convert 接口 ---
-  const convertToPdf = async (file: File): Promise<Blob | null> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    try {
-      const res = await fetch('/api/ai/convert', { method: 'POST', body: formData });
-      
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        // 如果后端报告 LibreOffice 错误，向外抛出特殊信号
-        if (errorData.error?.includes("LibreOffice") || res.status === 500) {
-          console.warn("后端转换引擎未就绪，将尝试降级处理（仅文本分析）");
-          return null; 
-        }
-        throw new Error(errorData.error || "文档云端转换失败");
-      }
-      return await res.blob();
-    } catch (err: any) {
-      return null; // 发生任何连接或环境错误均返回 null 触发降级
-    }
-  };
-
-  // --- 3. 视觉捕捉逻辑 ---
+  // --- 2A. 视觉捕捉逻辑：PDF/文档快照 ---
   const capturePdfPages = async (fileData: File | Blob): Promise<Blob[]> => {
     const blobs: Blob[] = [];
     try {
       const win = window as any;
       const arrayBuffer = await fileData.arrayBuffer();
       const pdf = await win.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      const numToCapture = Math.min(pdf.numPages, 12);
+      const numToCapture = Math.min(pdf.numPages, 6); // 截取前6页作为快照
       
       for (let i = 1; i <= numToCapture; i++) {
         const page = await pdf.getPage(i);
@@ -143,13 +118,86 @@ export default function AnalysisPage() {
         blobs.push(blob);
         canvas.width = 0; canvas.height = 0;
       }
-    } catch (err) { console.error("快照生成失败:", err); }
+    } catch (err) { console.error("PDF快照生成失败:", err); }
     return blobs;
   };
 
-  // --- 4. 文本提取逻辑 ---
+  // --- 2B. 视觉捕捉逻辑：视频截帧 ---
+  const captureVideoFrames = async (file: File): Promise<Blob[]> => {
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.src = URL.createObjectURL(file);
+      video.muted = true;
+      video.playsInline = true;
+
+      video.onloadeddata = async () => {
+        const blobs: Blob[] = [];
+        const duration = video.duration;
+        // 截取视频的 25%, 50%, 75% 三个时间点作为快照
+        const timestamps = [duration * 0.25, duration * 0.5, duration * 0.75].filter(t => !isNaN(t));
+
+        for (const time of timestamps) {
+          video.currentTime = time;
+          await new Promise((res) => { video.onseeked = () => res(null); });
+
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+          const blob = await new Promise<Blob>((res) => {
+            canvas.toBlob((b) => res(b!), 'image/jpeg', 0.8);
+          });
+          blobs.push(blob);
+        }
+        URL.revokeObjectURL(video.src);
+        resolve(blobs);
+      };
+      
+      video.onerror = () => {
+        URL.revokeObjectURL(video.src);
+        resolve([]);
+      };
+    });
+  };
+
+  // --- 2C. 视觉捕捉逻辑：纯前端 Office 媒体提取 ---
+  const extractOfficeMedia = async (file: File): Promise<Blob[]> => {
+    const blobs: Blob[] = [];
+    try {
+      const win = window as any;
+      const zip = await win.JSZip.loadAsync(await file.arrayBuffer());
+      
+      // 寻找 word/media 或 ppt/media 文件夹下的原生图片
+      const imagePaths = Object.keys(zip.files).filter(name => 
+        name.match(/(word|ppt)\/media\/.*\.(png|jpe?g|gif|webp)/i)
+      );
+
+      // 提取最多前 6 张媒体图片作为视觉参考
+      const numToCapture = Math.min(imagePaths.length, 6);
+      for (let i = 0; i < numToCapture; i++) {
+        const blob = await zip.file(imagePaths[i])?.async('blob');
+        if (blob) blobs.push(blob);
+      }
+    } catch (err) {
+      console.warn("Office 媒体提取失败:", err);
+    }
+    return blobs;
+  };
+
+  // --- 3. 文本提取逻辑 ---
   const extractText = async (file: File): Promise<string> => {
     const ext = file.name.split('.').pop()?.toLowerCase();
+    
+    // 处理音视频及图片，防乱码
+    if (['mp4', 'mov', 'avi', 'webm', 'mkv'].includes(ext || '')) {
+      return `[视频材料] 文件名: ${file.name}\n请根据该视频文件名，提取其可能对应的模块、角色及简介。`;
+    }
+    if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext || '')) {
+      return `[图片材料] 文件名: ${file.name}\n请根据该图片文件名提取信息。`;
+    }
+
     const win = window as any;
     if (ext === 'pdf') {
       const pdf = await win.pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
@@ -176,7 +224,7 @@ export default function AnalysisPage() {
     return await file.text();
   };
 
-  // --- 5. 处理流程调度 ---
+  // --- 4. 处理流程调度 ---
   const startBatchProcess = async () => {
     if (isProcessing) return;
     setIsProcessing(true);
@@ -194,35 +242,31 @@ export default function AnalysisPage() {
 
   const processSingleFile = async (item: FileItem) => {
     try {
-      // 阶段 1：提取文本 (纯前端 npm 库实现，不依赖服务器环境)
       updateItemStatus(item.id, 'extracting');
       const text = await extractText(item.file);
       
-      let visualSource: File | Blob | null = item.file;
       const ext = item.file.name.split('.').pop()?.toLowerCase();
+      let screenshotBlobs: Blob[] = [];
       let skippedVisual = false;
 
-      // 阶段 2：如果是 Word/PPT，尝试转换
-      if (ext === 'docx' || ext === 'pptx') {
-        updateItemStatus(item.id, 'converting');
-        const convertedBlob = await convertToPdf(item.file);
-        if (!convertedBlob) {
-          // ⚠️ 转换失败，降级标记
-          skippedVisual = true;
-          visualSource = null;
-        } else {
-          visualSource = convertedBlob;
+      updateItemStatus(item.id, 'capturing');
+
+      // 阶段 2：纯前端视觉特征提取路由
+      if (['mp4', 'mov', 'webm', 'avi'].includes(ext || '')) {
+        screenshotBlobs = await captureVideoFrames(item.file);
+      } else if (['jpg', 'jpeg', 'png', 'webp'].includes(ext || '')) {
+        screenshotBlobs = [item.file];
+      } else if (ext === 'pdf') {
+        screenshotBlobs = await capturePdfPages(item.file);
+      } else if (ext === 'docx' || ext === 'pptx') {
+        // 直接从 ZIP 包结构中无损提取插入的原生图像
+        screenshotBlobs = await extractOfficeMedia(item.file);
+        if (screenshotBlobs.length === 0) {
+          skippedVisual = true; // 文档内纯文字，无配图可提取
         }
       }
 
-      // 阶段 3：视觉快照生成 (如果有源文件且支持)
-      let screenshotBlobs: Blob[] = [];
-      if (visualSource) {
-        updateItemStatus(item.id, 'capturing');
-        screenshotBlobs = await capturePdfPages(visualSource);
-      }
-
-      // 阶段 4：AI 分析与入库
+      // 阶段 3：AI 分析与入库
       updateItemStatus(item.id, 'analyzing');
       const formData = new FormData();
       formData.append('file', item.file);
@@ -230,7 +274,7 @@ export default function AnalysisPage() {
       formData.append('model', currentModel.id);
       
       screenshotBlobs.forEach((blob, i) => {
-        formData.append('screenshots', blob, `p${i+1}.jpg`);
+        formData.append('screenshots', blob, `snap_${i+1}.jpg`);
       });
 
       const res = await fetch('/api/ai/analyze-learning', { method: 'POST', body: formData });
@@ -288,7 +332,7 @@ export default function AnalysisPage() {
           <h1 className="text-4xl font-black tracking-tighter flex items-center gap-4">
             AI 知识工场 <span className="text-blue-600 font-mono tracking-normal">v3.1</span>
           </h1>
-          <p className="text-slate-500 font-medium italic mt-2">智能处理引擎已上线。支持多格式降级分析，即使环境不满足也能获取 AI 深度报告。</p>
+          <p className="text-slate-500 font-medium italic mt-2">完全剥离后端依赖。支持纯前端环境多格式极速特征提取与快照截取。</p>
         </div>
 
         <div className="flex gap-4">
@@ -311,7 +355,6 @@ export default function AnalysisPage() {
         
         {/* 左侧控制区 */}
         <div className="lg:col-span-4 space-y-6">
-          
           <div className="bg-white p-4 rounded-[28px] shadow-sm border border-slate-100 flex items-center gap-3">
              <div className="relative flex-1">
                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
@@ -339,7 +382,7 @@ export default function AnalysisPage() {
             <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-indigo-800 opacity-90 group-hover:scale-110 transition-transform duration-700" />
             <input type="file" multiple className="absolute inset-0 opacity-0 cursor-pointer z-20" onChange={handleFileSelect} />
             <UploadCloud className="w-12 h-12 text-white mb-4 animate-bounce" />
-            <p className="font-black uppercase tracking-[0.2em] text-[10px] text-white text-center px-6">投递 200+ 文档批量启动</p>
+            <p className="font-black uppercase tracking-[0.2em] text-[10px] text-white text-center px-6">纯前端架构：支持 DOCS, PPTX, MP4, PDF</p>
           </div>
 
           <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm flex flex-col h-[500px] overflow-hidden">
@@ -355,14 +398,13 @@ export default function AnalysisPage() {
                       <span className={`text-[9px] font-black uppercase mt-1 block tracking-widest ${item.status === 'success' ? 'text-green-500' : item.status === 'error' ? 'text-red-500' : 'text-slate-400'}`}>
                         {item.status === 'pending' && '等待中'}
                         {item.status === 'extracting' && '读取文本...'}
-                        {item.status === 'converting' && 'Office 预览化...'}
-                        {item.status === 'capturing' && '生成快照...'}
-                        {item.status === 'analyzing' && 'AI 华语解析...'}
-                        {item.status === 'success' && (item.skipVisual ? '同步完成(无快照)' : '同步完成')}
+                        {item.status === 'capturing' && '本地截取视效...'}
+                        {item.status === 'analyzing' && 'AI 数据提取中...'}
+                        {item.status === 'success' && (item.skipVisual ? '完成(纯净文本)' : '处理完成')}
                       </span>
                     </div>
                   </div>
-                  {['extracting', 'converting', 'capturing', 'analyzing'].includes(item.status) && <Loader2 className="w-4 h-4 animate-spin text-blue-500 mr-2" />}
+                  {['extracting', 'capturing', 'analyzing'].includes(item.status) && <Loader2 className="w-4 h-4 animate-spin text-blue-500 mr-2" />}
                 </div>
               ))}
             </div>
@@ -375,7 +417,7 @@ export default function AnalysisPage() {
               <div className="flex-1 flex flex-col items-center justify-center text-center">
                  <div className="p-8 bg-white/5 rounded-full mb-8 border border-white/5 shadow-inner"><Sparkles className="w-16 h-16 text-blue-500/30" /></div>
                  <h2 className="text-white font-black text-2xl tracking-tighter uppercase">Knowledge Neural Center</h2>
-                 <p className="text-slate-500 text-sm mt-4 max-w-sm">请启动左侧流水线。即使服务器环境受限，纯前端逻辑也将确保 AI 文本分析顺利入库。</p>
+                 <p className="text-slate-500 text-sm mt-4 max-w-sm">引擎就绪。正在以零服务器依赖的方式，提取媒体资产与核心语义入库。</p>
               </div>
            ) : (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 flex-1 flex flex-col">
@@ -398,10 +440,9 @@ export default function AnalysisPage() {
                       <div className="bg-blue-600/10 border border-blue-600/20 p-6 rounded-[32px] flex items-start gap-4">
                          <Info className="w-6 h-6 text-blue-400 shrink-0" />
                          <div>
-                            <h4 className="text-blue-400 font-black text-sm uppercase mb-1">环境降级通知 / Dynamic Downgrade</h4>
+                            <h4 className="text-blue-400 font-black text-sm uppercase mb-1">资产剥离通知 / Media Exclusion</h4>
                             <p className="text-slate-400 text-xs leading-relaxed">
-                              由于本地环境未配置 <strong>LibreOffice</strong>，系统已自动切换至“文本解析模式”。<br />
-                              当前文档已成功入库 AI 华语摘要，但视觉快照（Snapshot）已被跳过。
+                              系统检测到当前文档为纯文本结构，内部无配图资源。已自动归档为轻量级文本条目。
                             </p>
                          </div>
                       </div>
@@ -411,13 +452,13 @@ export default function AnalysisPage() {
                     {selectedResult?.page_screenshots && selectedResult.page_screenshots.length > 0 && (
                       <section>
                         <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
-                           <ImageIcon className="w-4 h-4" /> 视觉存根 (Capture Stream)
+                           <ImageIcon className="w-4 h-4" /> 视觉快照集 (Capture Stream)
                         </h4>
                         <div className="flex gap-5 overflow-x-auto pb-6 snap-x custom-scrollbar">
                            {selectedResult.page_screenshots.map((url, i) => (
                              <div key={url} className="flex-none w-56 aspect-[3/4] bg-white/5 rounded-[32px] overflow-hidden border border-white/10 group relative snap-start hover:border-blue-500 transition-all shadow-2xl">
-                                <img src={url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={`P${i+1}`} />
-                                <div className="absolute top-4 right-4 bg-slate-900/90 backdrop-blur px-3 py-1 rounded-full text-[8px] font-black text-white border border-white/10 tracking-widest">PG.{i+1}</div>
+                                <img src={url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={`Snapshot ${i+1}`} />
+                                <div className="absolute top-4 right-4 bg-slate-900/90 backdrop-blur px-3 py-1 rounded-full text-[8px] font-black text-white border border-white/10 tracking-widest">SNAP.{i+1}</div>
                              </div>
                            ))}
                         </div>
@@ -425,7 +466,7 @@ export default function AnalysisPage() {
                     )}
 
                     <section className="bg-white/[0.02] p-10 rounded-[48px] border border-white/5 relative shadow-inner">
-                       <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-6">AI 核心摘要解析 (华语)</h4>
+                       <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-6">AI 核心摘要解析</h4>
                        <div className="italic text-slate-300 text-xl leading-relaxed font-light">“{selectedResult?.description}”</div>
                        <div className="flex flex-wrap gap-3 mt-10">
                           {selectedResult?.tags.map(t => (
