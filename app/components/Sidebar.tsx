@@ -7,9 +7,9 @@ import { Command, BookOpen, Globe, LifeBuoy, Home, Settings, User, Bell } from '
 const NAV_ITEMS = [
   { name: '首页大盘', href: '/', icon: Home },
   { name: 'T-code 速查', href: '/t-codes', icon: Command },
-  { name: '快捷访问', href: '/gateway', icon: Globe },
+  // { name: '快捷访问', href: '/gateway', icon: Globe },
   { name: '培训与指南', href: '/training', icon: BookOpen },
-  { name: '用户支持', href: '/support', icon: LifeBuoy },
+  // { name: '用户支持', href: '/support', icon: LifeBuoy },
 ];
 
 export default function Sidebar() {

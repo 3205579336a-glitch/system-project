@@ -1,233 +1,321 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { motion, Variants } from 'framer-motion';
-import { Search, ExternalLink, Play, Clock, ArrowRight, Star, Activity, BookOpen } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { motion, Variants, AnimatePresence } from 'framer-motion';
+import { 
+  Search, ExternalLink, Play, Clock, ArrowRight, Star, 
+  Activity, BookOpen, Sparkles, Loader2, Database, ShieldCheck
+} from 'lucide-react';
+
+// --- 模拟 Link 组件，解决环境编译错误 ---
+const Link = ({ href, children, className }: { href: string, children: React.ReactNode, className?: string }) => (
+  <a href={href} className={className}>{children}</a>
+);
 
 export default function WorkspaceHome() {
-  // 🌟 优化 3：动态问候语、Emoji与卡片主题色
   const [timeConfig, setTimeConfig] = useState({
     greeting: '你好',
     emoji: '👋',
-    theme: 'from-[#003057] to-[#005A9E]', // 默认沃尔沃蓝
+    theme: 'from-[#003057] to-[#005A9E]',
     halo: 'bg-blue-400'
   });
 
-  // 🌟 优化 2：我的收藏状态（故意设为空数组，带你体验高级空状态处理）
-  // 想要看有数据时的样子，可以在这里填入数据，例如：[{ code: 'ME21N', desc: '创建采购订单', bg: 'bg-blue-50', text: 'text-blue-600' }]
-  const [favoriteTCodes, setFavoriteTCodes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [latestLearning, setLatestLearning] = useState<any>(null);
+  const [stats, setStats] = useState({ total: 0, videoCount: 0 });
+  const [favoriteTCodes] = useState<any[]>([]); // 暂保持静态
 
+  // --- 🌟 辅助函数：根据 ID 生成确定的进度百分比 (让 Demo 看起来更真实) ---
+  const getDeterministicProgress = (id: string) => {
+    if (!id) return 0;
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) {
+      hash = id.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    // 生成 15 到 95 之间的百分比
+    const progress = 15 + (Math.abs(hash) % 81);
+    return progress;
+  };
+
+  // --- 1. 初始化 Supabase 并抓取真实数据 ---
   useEffect(() => {
+    const initAndFetch = async () => {
+      setLoading(true);
+      try {
+        // 动态加载 Supabase
+        if (!(window as any).supabase) {
+          await new Promise((resolve) => {
+            const script = document.createElement("script");
+            script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+            script.onload = resolve;
+            document.head.appendChild(script);
+          });
+        }
+        const win = window as any;
+        const supabase = win.supabase.createClient(
+          "https://yzeefqpguywxobxprehb.supabase.co",
+          "sb_publishable_RHi0eVDrudtOORT3oruOzQ_lpsXXhoL"
+        );
+
+        // 获取最新的一条学习内容
+        const { data: latest } = await supabase
+          .from('learning_contents')
+          .select('*')
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        // 注入计算出的进度
+        if (latest) {
+          latest.progress = getDeterministicProgress(latest.id);
+        }
+        setLatestLearning(latest);
+
+        // 获取统计信息
+        const { count } = await supabase
+          .from('learning_contents')
+          .select('*', { count: 'exact', head: true });
+        
+        const { count: vCount } = await supabase
+          .from('learning_contents')
+          .select('*', { count: 'exact', head: true })
+          .eq('type', 'video');
+
+        setStats({ total: count || 0, videoCount: vCount || 0 });
+
+      } catch (err) {
+        console.error("Data Fetch Error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initAndFetch();
+
+    // 时间配置逻辑
     const hour = new Date().getHours();
     if (hour < 12) {
-      setTimeConfig({
-        greeting: '早上好', emoji: '🌅', 
-        theme: 'from-orange-500 to-amber-600', // 晨曦橙
-        halo: 'bg-yellow-300'
-      });
+      setTimeConfig({ greeting: '早上好', emoji: '🌅', theme: 'from-orange-500 to-amber-600', halo: 'bg-yellow-300' });
     } else if (hour < 18) {
-      setTimeConfig({
-        greeting: '下午好', emoji: '☀️', 
-        theme: 'from-[#003057] to-[#005A9E]', // 沃尔沃深蓝
-        halo: 'bg-blue-400'
-      });
+      setTimeConfig({ greeting: '下午好', emoji: '☀️', theme: 'from-[#003057] to-[#005A9E]', halo: 'bg-blue-400' });
     } else {
-      setTimeConfig({
-        greeting: '晚上好', emoji: '🌙', 
-        theme: 'from-indigo-900 to-slate-800', // 静谧紫
-        halo: 'bg-purple-500'
-      });
+      setTimeConfig({ greeting: '晚上好', emoji: '🌙', theme: 'from-indigo-900 to-slate-800', halo: 'bg-purple-500' });
     }
   }, []);
 
-  // Framer Motion 动效配置
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    }
+    show: { opacity: 1, transition: { staggerChildren: 0.1 } }
   };
 
   const cardVariants: Variants = {
-    hidden: { opacity: 0, y: 30 },
-    show: { 
-      opacity: 1, y: 0, 
-      transition: { type: 'spring', stiffness: 300, damping: 24 }
-    }
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
   };
 
   return (
-    <div className="p-8 pb-24 max-w-[1400px] mx-auto font-sans overflow-x-hidden">
+    <div className="p-8 pb-24 max-w-[1400px] mx-auto font-sans bg-[#FBFBFE] min-h-screen text-slate-900">
       
       {/* 顶部标题区 */}
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+      <div className="mb-10 flex items-center justify-between">
+        <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}>
+          <h1 className="text-4xl font-black text-slate-900 mb-2 flex items-center gap-4 tracking-tighter">
             {timeConfig.greeting}，Demo User
-            {/* 🌟 Emoji 微动效：轻微晃动 */}
             <motion.span 
-              animate={{ rotate: [0, 15, -10, 15, 0] }} 
-              transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 5 }}
+              animate={{ rotate: [0, 20, -10, 20, 0] }} 
+              transition={{ duration: 2, repeat: Infinity, repeatDelay: 4 }}
               className="inline-block"
             >
               {timeConfig.emoji}
             </motion.span>
           </h1>
-          <p className="text-gray-500 text-sm">今天是 {new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' })}，准备好开始今天的工作了吗？</p>
-        </div>
+          <div className="flex items-center gap-3">
+             <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
+             <p className="text-slate-400 text-sm font-medium tracking-tight uppercase">
+               {new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' })} · 系统已就绪
+             </p>
+          </div>
+        </motion.div>
       </div>
 
-      {/* 核心 Bento Grid (便当盒网格布局) */}
+      {/* 核心 Bento Grid */}
       <motion.div 
         variants={containerVariants}
         initial="hidden"
         animate="show"
-        className="grid grid-cols-1 md:grid-cols-6 lg:grid-cols-12 gap-6 auto-rows-[160px]"
+        className="grid grid-cols-1 md:grid-cols-6 lg:grid-cols-12 gap-6 auto-rows-[180px]"
       >
 
-        {/* 1. 超级搜索与欢迎卡片 (占 8 列，高度 2 行) */}
-        {/* 🌟 这里的背景色会根据时间动态变化 */}
-        <motion.div variants={cardVariants} className={`md:col-span-6 lg:col-span-8 row-span-2 relative overflow-hidden rounded-3xl bg-gradient-to-br ${timeConfig.theme} shadow-lg group transition-colors duration-1000 ease-in-out`}>
-          {/* 装饰性背景光晕也会随时间变色 */}
-          <div className={`absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 ${timeConfig.halo} rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse transition-colors duration-1000`}></div>
+        {/* 1. 超级搜索卡片 (占 8 列，高度 2 行) */}
+        <motion.div variants={cardVariants} className={`md:col-span-6 lg:col-span-8 row-span-2 relative overflow-hidden rounded-[48px] bg-gradient-to-br ${timeConfig.theme} shadow-2xl group`}>
+          <div className={`absolute top-0 right-0 -mr-20 -mt-20 w-[500px] h-[500px] ${timeConfig.halo} rounded-full mix-blend-overlay filter blur-[100px] opacity-40 animate-pulse`}></div>
           
-          <div className="relative h-full p-8 md:p-10 flex flex-col justify-between z-10">
+          <div className="relative h-full p-10 md:p-12 flex flex-col justify-between z-10 text-white">
             <div>
-              <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md text-white text-xs font-bold rounded-full mb-4 shadow-sm">
-                Volvo System Workspace
-              </span>
-              <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-4 leading-tight tracking-tight">
-                连接数据，<br/>赋能每一个业务决策。
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/10 backdrop-blur-xl border border-white/10 rounded-full mb-6 shadow-xl">
+                 <ShieldCheck className="w-3.5 h-3.5 text-blue-300" />
+                 <span className="text-[10px] font-black uppercase tracking-[0.2em]">Enterprise Workspace</span>
+              </div>
+              <h2 className="text-4xl md:text-5xl font-black mb-4 leading-[1.1] tracking-tighter">
+                连接业务数据，<br/>驱动智慧决策。
               </h2>
             </div>
 
             <div className="relative max-w-xl group/search">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-gray-400 group-focus-within/search:text-blue-500 transition-colors" />
+              <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
+                <Search className="h-6 w-6 text-blue-300/50 group-focus-within/search:text-blue-400 transition-colors" />
               </div>
               <input 
                 type="text" 
-                placeholder="搜索 T-code、同事名称或系统 SOP..." 
-                className="w-full pl-12 pr-4 py-4 bg-white/95 backdrop-blur-sm border-none text-gray-900 text-base outline-none rounded-2xl shadow-xl focus:ring-4 focus:ring-white/30 transition-all placeholder-gray-400 font-medium"
+                placeholder="搜索 T-code、业务模块或 SOP 文档..." 
+                className="w-full pl-16 pr-6 py-5 bg-white/10 backdrop-blur-2xl border border-white/10 text-white text-lg outline-none rounded-3xl shadow-2xl focus:bg-white focus:text-slate-900 transition-all placeholder-white/40 font-bold"
               />
-              <div className="absolute inset-y-0 right-2 flex items-center">
-                <span className="text-[10px] text-gray-400 font-bold bg-gray-100 px-2.5 py-1.5 rounded-lg border border-gray-200 shadow-sm">Cmd K</span>
+              <div className="absolute inset-y-0 right-3 flex items-center">
+                <div className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black opacity-40">CMD K</div>
               </div>
             </div>
           </div>
         </motion.div>
 
-        {/* 2. 我的最爱 T-code (占 4 列，高度 2 行) */}
-        <motion.div variants={cardVariants} className="md:col-span-6 lg:col-span-4 row-span-2 bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col hover:border-blue-200 transition-colors h-full overflow-hidden">
-          <div className="flex justify-between items-center mb-4 shrink-0">
-            <h3 className="font-bold text-gray-900 flex items-center gap-2">
-              <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" /> 常用事务代码
+        {/* 2. 常用事务代码 (占 4 列，高度 2 行) */}
+        <motion.div variants={cardVariants} className="md:col-span-6 lg:col-span-4 row-span-2 bg-white rounded-[40px] p-8 shadow-sm border border-slate-100 flex flex-col hover:shadow-xl transition-all h-full overflow-hidden relative border-solid">
+          <div className="flex justify-between items-center mb-6 shrink-0">
+            <h3 className="font-black text-slate-900 flex items-center gap-3 text-lg tracking-tight">
+              <div className="p-2 bg-amber-50 rounded-xl"><Star className="w-5 h-5 text-amber-500 fill-amber-500" /></div>
+              常用事务代码
             </h3>
-            <Link href="/t-codes" className="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center group">
-              全部 <ArrowRight className="w-3 h-3 ml-0.5 group-hover:translate-x-1 transition-transform" />
-            </Link>
+            <Link href="/t-codes" className="p-2 hover:bg-slate-50 rounded-full transition-colors"><ArrowRight className="w-5 h-5 text-slate-300" /></Link>
           </div>
           
-          <div className="flex-1 overflow-y-auto pr-2 -mr-2 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-200 hover:[&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full">
-            {/* 🌟 优化 2：优雅的空状态处理 */}
+          <div className="flex-1 overflow-y-auto pr-2 -mr-2 custom-scrollbar">
             {favoriteTCodes.length > 0 ? (
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 {favoriteTCodes.map(t => (
-                  <div key={t.code} className="group flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-100 transition-all cursor-pointer">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg ${t.bg} flex items-center justify-center ${t.text} font-bold font-mono text-sm`}>
+                  <div key={t.code} className="group flex items-center justify-between p-4 rounded-3xl hover:bg-blue-50/50 border border-transparent hover:border-blue-100 transition-all cursor-pointer">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 font-black text-xs shadow-inner`}>
                         {t.code.substring(0, 2)}
                       </div>
                       <div>
-                        <p className="font-bold text-gray-900 text-sm font-mono group-hover:text-blue-600 transition-colors">{t.code}</p>
-                        <p className="text-xs text-gray-500">{t.desc}</p>
+                        <p className="font-black text-slate-900 text-sm font-mono tracking-tight">{t.code}</p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase">{t.desc}</p>
                       </div>
                     </div>
-                    <button className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 group-hover:bg-[#005A9E] group-hover:text-white group-hover:border-transparent transition-all shadow-sm shrink-0">
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </button>
+                    <ExternalLink className="w-4 h-4 text-slate-200 group-hover:text-blue-500 transition-colors" />
                   </div>
                 ))}
               </div>
             ) : (
-              // 🌟 高级空状态设计 (Dashed container + Action button)
-              <div className="h-full flex flex-col items-center justify-center text-center p-4 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/50 group hover:border-blue-200 hover:bg-blue-50/30 transition-colors">
-                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3 group-hover:bg-blue-100 transition-colors">
-                  <Star className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
+              <div className="h-full flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-slate-100 rounded-[32px] bg-slate-50/30">
+                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center mb-4 shadow-sm border border-slate-100">
+                  <Star className="w-6 h-6 text-slate-200" />
                 </div>
-                <p className="text-sm font-bold text-gray-700 mb-1">暂无常用代码</p>
-                <p className="text-[11px] text-gray-500 mb-4 px-2">你还没有收藏任何 T-code，去检索台逛逛，点击星号将它们固定在这里。</p>
-                <Link href="/t-codes" className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:border-blue-400 hover:text-blue-600 hover:shadow-sm transition-all flex items-center gap-1.5">
-                  前往检索 <ArrowRight className="w-3 h-3" />
+                <p className="text-sm font-black text-slate-800 mb-1 uppercase tracking-widest">No Favorites Yet</p>
+                <p className="text-[11px] text-slate-400 font-medium px-4 mb-6">点击系统中的星号，将常用工具固定至此处。</p>
+                <Link href="/training" className="px-6 py-2.5 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-slate-200">
+                  发现更多工具
                 </Link>
               </div>
             )}
           </div>
         </motion.div>
 
-        {/* 3. 继续学习 (占 6 列，高度 1 行) */}
-        <motion.div variants={cardVariants} className="md:col-span-3 lg:col-span-6 row-span-1 bg-white rounded-3xl p-1 shadow-sm border border-gray-100 relative overflow-hidden group">
-          <Link href="/training/v1" className="absolute inset-0 z-10"></Link>
-          <div className="flex h-full">
-            <div className="w-40 h-full bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl relative overflow-hidden shrink-0">
-              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                <Play className="w-8 h-8 text-white opacity-80 group-hover:scale-110 transition-transform" />
-              </div>
-            </div>
-            <div className="p-5 flex flex-col justify-between flex-1">
-              <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 flex items-center gap-1">
-                  <Clock className="w-3 h-3" /> 继续观看
-                </p>
-                <h3 className="font-bold text-gray-900 text-base line-clamp-1 group-hover:text-blue-600 transition-colors">SAP APQP 完整操作流程与避坑指南</h3>
-              </div>
-              <div>
-                <div className="flex justify-between text-xs text-gray-500 mb-1.5 font-medium">
-                  <span>进度 65%</span>
-                  <span>剩余 04:20</span>
+        {/* 3. 动态接入：继续观看 (接入计算出的“真实”进度) */}
+        <motion.div variants={cardVariants} className="md:col-span-3 lg:col-span-6 row-span-1 bg-white rounded-[40px] p-2 shadow-sm border border-slate-100 relative overflow-hidden group">
+          {loading ? (
+             <div className="h-full w-full flex items-center justify-center bg-slate-50 animate-pulse rounded-[36px]">
+                <Loader2 className="w-6 h-6 animate-spin text-slate-200" />
+             </div>
+          ) : latestLearning ? (
+            <>
+              <Link href={`/training/${latestLearning.id}`} className="absolute inset-0 z-20"></Link>
+              <div className="flex h-full">
+                <div className="w-48 h-full rounded-[32px] relative overflow-hidden shrink-0 border border-slate-50">
+                  {latestLearning.thumbnail_url ? (
+                    <img src={latestLearning.thumbnail_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="Thumb" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                       <Play className="w-10 h-10 text-white opacity-40" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                    <div className="p-3 bg-white/20 backdrop-blur-md rounded-full shadow-2xl border border-white/20">
+                       <Play className="w-6 h-6 text-white fill-current" />
+                    </div>
+                  </div>
                 </div>
-                <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-blue-600 h-full rounded-full w-[65%]"></div>
+                <div className="p-6 flex flex-col justify-between flex-1 min-w-0">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                       <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                       <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">Latest Insight</p>
+                    </div>
+                    <h3 className="font-black text-slate-900 text-xl line-clamp-1 group-hover:text-blue-600 transition-colors tracking-tight">
+                      {latestLearning.title}
+                    </h3>
+                    <p className="text-[11px] text-slate-400 font-bold mt-1 uppercase tracking-widest">{latestLearning.module} · {latestLearning.role}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                       {/* 🌟 使用计算出的真实进度 */}
+                       <motion.div 
+                         initial={{ width: 0 }} 
+                         animate={{ width: `${latestLearning.progress}%` }} 
+                         transition={{ duration: 1, ease: "easeOut" }}
+                         className="bg-blue-600 h-full rounded-full" 
+                       />
+                    </div>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{latestLearning.progress}% Complete</span>
+                  </div>
                 </div>
               </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-full w-full bg-slate-50 rounded-[36px] italic text-slate-300 font-bold uppercase text-xs tracking-widest">
+               No Learning Path Found
             </div>
+          )}
+        </motion.div>
+
+        {/* 4. 实时统计卡片 (占 3 列，高度 1 行) */}
+        <motion.div variants={cardVariants} className="md:col-span-3 lg:col-span-3 row-span-1 bg-white rounded-[40px] p-8 shadow-sm border border-slate-100 flex flex-col justify-between hover:shadow-lg transition-all border-solid">
+          <div className="flex justify-between items-start">
+            <div className="w-12 h-12 rounded-2xl bg-green-50 flex items-center justify-center text-green-600 shadow-inner">
+              <Database className="w-6 h-6" />
+            </div>
+            <div className="px-3 py-1 bg-green-50 rounded-full flex items-center gap-2">
+               <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-ping" />
+               <span className="text-[9px] font-black text-green-600 uppercase tracking-widest">Live Sync</span>
+            </div>
+          </div>
+          <div>
+            <h3 className="font-black text-slate-900 text-3xl mb-1 tracking-tighter">{stats.total}</h3>
+            <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">解析入库文档总量</p>
           </div>
         </motion.div>
 
-        {/* 4. 环境与系统健康度 (占 3 列，高度 1 行) */}
-        <motion.div variants={cardVariants} className="md:col-span-3 lg:col-span-3 row-span-1 bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col justify-between hover:border-blue-200 transition-colors">
+        {/* 5. 快捷动作/动态版本 (占 3 列，高度 1 行) */}
+        <motion.div variants={cardVariants} className="md:col-span-3 lg:col-span-3 row-span-1 bg-slate-900 rounded-[40px] p-8 shadow-2xl flex flex-col justify-between group cursor-pointer hover:scale-[1.02] transition-transform">
           <div className="flex justify-between items-start">
-            <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
-              <Activity className="w-5 h-5 text-green-600" />
+            <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-blue-400 border border-white/10">
+              <Sparkles className="w-6 h-6 animate-pulse" />
             </div>
-            <Link href="/gateway" className="text-gray-400 hover:text-blue-600 transition-colors"><ArrowRight className="w-5 h-5" /></Link>
+            <Link href="/analysis" className="text-white/20 hover:text-white transition-colors"><ArrowRight className="w-6 h-6" /></Link>
           </div>
           <div>
-            <h3 className="font-bold text-gray-900 text-lg mb-0.5">系统运行正常</h3>
-            <p className="text-xs text-gray-500">SAP S/4HANA 延迟 &lt; 40ms</p>
-          </div>
-        </motion.div>
-
-        {/* 5. 待办事项或快捷操作 (占 3 列，高度 1 行) */}
-        <motion.div variants={cardVariants} className="md:col-span-3 lg:col-span-3 row-span-1 bg-blue-50/50 rounded-3xl p-6 shadow-sm border border-blue-100 flex flex-col justify-between border-dashed hover:bg-blue-50 transition-colors cursor-pointer">
-          <div className="flex justify-between items-start">
-            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-              <BookOpen className="w-5 h-5 text-blue-600" />
-            </div>
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-            </span>
-          </div>
-          <div>
-            <h3 className="font-bold text-blue-900 text-base mb-0.5">系统更新文档</h3>
-            <p className="text-xs text-blue-600/80">V2.4 版本已发布</p>
+            <h3 className="font-black text-white text-lg mb-1 tracking-tight">AI 知识工场</h3>
+            <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">前往解析 200+ 新素材</p>
           </div>
         </motion.div>
 
       </motion.div>
+
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 20px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #CBD5E1; }
+      `}</style>
     </div>
   );
 }

@@ -6,7 +6,8 @@ import { createClient } from '@supabase/supabase-js';
 import {
   Search, Copy, Check, Star, ChevronDown, ChevronUp, Users,
   ArrowRight, ExternalLink, Link as LinkIcon, XCircle,
-  ChevronLeft, ChevronRight, Lightbulb, X, Command, Loader2,Sparkles
+  ChevronLeft, ChevronRight, Lightbulb, X, Command, Loader2,Sparkles,
+  Link,PlayCircle,BookOpen,FileText
 } from 'lucide-react';
 import Fuse from 'fuse.js';
 
@@ -68,6 +69,8 @@ function TCodeDirectoryCore() {
   // 🌟 新增：云端数据状态
   const [tcodeData, setTcodeData] = useState<TCodeItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [learningData, setLearningData] = useState<any[]>([]); // <-- 新增：全量培训资源
+  const [suggestedLearning, setSuggestedLearning] = useState<any[]>([]); // <-- 新增：当前推荐的培训资源
 
   // 🌟 AI 搜索专属状态
   const [isAiSearching, setIsAiSearching] = useState(false);
@@ -81,13 +84,45 @@ function TCodeDirectoryCore() {
   const [currentPage, setCurrentPage] = useState(Number(searchParams.get('page')) || 1);
   const ITEMS_PER_PAGE = 10;
 
-  const [favorites, setFavorites] = useState<number[]>([1, 5]);
+// 🌟 初始化为空数组
+  const [favorites, setFavorites] = useState<number[]>([]);
+
+
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [linkCopiedId, setLinkCopiedId] = useState<number | null>(null);
 
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
 
+
+    // 🌟 组件挂载后，从本地存储读取收藏记录
+  useEffect(() => {
+    try {
+      const savedFavs = localStorage.getItem('tcode_favorites');
+      if (savedFavs) {
+        setFavorites(JSON.parse(savedFavs));
+      }
+    } catch (error) {
+      console.error('读取收藏数据失败:', error);
+    }
+  }, []);
+  // 🌟 从 Supabase 同时获取 T-code 和 培训资源数据
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      // 并行请求两个表，提升加载速度
+      const [tcodesRes, learningRes] = await Promise.all([
+        supabase.from('tcodes').select('*').order('id', { ascending: true }),
+        supabase.from('learning_contents').select('*').order('updated_at', { ascending: false })
+      ]);
+
+      if (tcodesRes.data) setTcodeData(tcodesRes.data as TCodeItem[]);
+      if (learningRes.data) setLearningData(learningRes.data);
+      setIsLoading(false);
+    };
+
+    fetchData();
+  }, []);
 
   const fuse = useMemo(() => {
     return new Fuse(tcodeData, {
@@ -104,21 +139,6 @@ function TCodeDirectoryCore() {
       minMatchCharLength: 2,
     });
   }, [tcodeData]);
-
-  const normalizeQuery = (input: string) => {
-    return input
-      .toLowerCase()
-      .replace(/\s+/g, ' ')
-      .trim();
-  };
-
-
-  const intentMap: Record<string, string[]> = {
-    'approve pca': ['ZMFM0015'],
-    '审批pca': ['ZMFM0015'],
-    '冻结期': ['ZMFM_FIRM_UPD'],
-    'firm zone': ['ZMFM_FIRM_UPD'],
-  };
 
 
   // 🌟 从 Supabase 获取数据
@@ -168,32 +188,53 @@ function TCodeDirectoryCore() {
   }, [searchTerm, activeCategory, activeRole, expandedId, currentPage, pathname]);
 
 // 🌟 AI 核心调用方法
+// 🌟 增强版 AI 核心调用方法
+// 🌟 增强版 AI 核心调用方法
   const handleAiSearch = async () => {
     if (!searchTerm.trim() || isAiSearching) return;
     
     setIsAiSearching(true);
-    setAiMatchedCodes(null); // 清理旧结果
+    setAiMatchedCodes(null);
+    setSuggestedLearning([]); // 清空旧的文档推荐
 
     try {
-      // 压缩目录数据以节省大模型 Token 和提升速度（只传必要的关键字段）
-      const compressedCatalog = tcodeData.map(t => ({
-        c: t.code,
-        d: t.desc,
-        k: t.keywords?.join(','),
-        a: t.aliases?.join(','),
-        s: t.scenario?.join(',')
+      // 1. 压缩 T-code 目录数据以节省大模型 Token
+      const compressedTCodes = tcodeData.map(t => ({
+        c: t.code, d: t.desc, k: t.keywords?.join(','), a: t.aliases?.join(','), s: t.scenario?.join(',')
       }));
 
+      // 2. 压缩 培训资源 目录数据以节省大模型 Token
+      const compressedLearnings = learningData.map(l => ({
+        id: l.id, t: l.title, d: l.description, m: l.module
+      }));
+
+      console.log('[AI Search] Sending query to AI backend with compressed catalogs:', { searchTerm, compressedTCodes, compressedLearnings });
+
+      // 发送请求，把两种数据都传给 AI 后端
       const res = await fetch('/api/ai/search-tcode', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: searchTerm, catalog: compressedCatalog })
+        body: JSON.stringify({ 
+          query: searchTerm, 
+          tcodeCatalog: compressedTCodes,
+          learningCatalog: compressedLearnings
+        })
       });
 
-      const data = await res.json();
-      if (data.success && Array.isArray(data.codes)) {
-        setAiMatchedCodes(data.codes);
-        setCurrentPage(1);
+      const resData = await res.json();
+      
+      if (resData.success && resData.data) {
+        // ✨ 设置大模型匹配到的 T-code
+        if (Array.isArray(resData.data.tcodes)) {
+          setAiMatchedCodes(resData.data.tcodes);
+          setCurrentPage(1);
+        }
+
+        // ✨ 设置大模型匹配到的 培训资源 (根据返回的 ID 过滤出完整的资源对象)
+        if (Array.isArray(resData.data.learningIds) && resData.data.learningIds.length > 0) {
+          const matchedDocs = learningData.filter(doc => resData.data.learningIds.includes(doc.id));
+          setSuggestedLearning(matchedDocs);
+        }
       }
     } catch (error) {
       console.error('AI 匹配失败', error);
@@ -202,13 +243,13 @@ function TCodeDirectoryCore() {
       setIsAiSearching(false);
     }
   };
-
   // 监听回车键触发 AI 搜索
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') handleAiSearch();
   };
 
   // 过滤逻辑 (双引擎降级)
+// 过滤逻辑 (双引擎降级)
   const filteredTCodes = useMemo(() => {
     let baseResult = tcodeData;
 
@@ -234,8 +275,6 @@ function TCodeDirectoryCore() {
       .map(r => r.item);
 
   }, [tcodeData, searchTerm, activeCategory, activeRole, favorites, fuse, aiMatchedCodes]);
-  // 过滤逻辑
-
 
   // 计算分页数据
   const totalPages = Math.ceil(filteredTCodes.length / ITEMS_PER_PAGE);
@@ -260,7 +299,16 @@ function TCodeDirectoryCore() {
     return pages;
   };
 
-  const handleSearchChange = (val: string) => { setSearchTerm(val); setCurrentPage(1); };
+  const handleSearchChange = (val: string) => { 
+    setSearchTerm(val); 
+    setCurrentPage(1); 
+    
+    // 🐛 修复：当搜索词清空时，彻底重置 AI 状态和推荐资源
+    if (!val.trim()) {
+      setAiMatchedCodes(null);
+      setSuggestedLearning([]);
+    }
+  };
   const handleCategoryChange = (val: string) => { setActiveCategory(val); setCurrentPage(1); };
   const handleRoleChange = (val: string) => { setActiveRole(val); setCurrentPage(1); };
 
@@ -287,10 +335,25 @@ function TCodeDirectoryCore() {
     setTimeout(() => setCopiedId(null), 2000);
   };
   const handleLaunchSAP = (e: React.MouseEvent, code: string) => { e.preventDefault(); e.stopPropagation(); const launchUrl = `https://ui5ce.volvo.com/sap/bc/gui/sap/its/webgui?~transaction=${code}`; window.open(launchUrl, '_blank'); };
-  const toggleFavorite = (e: React.MouseEvent, id: number) => { e.stopPropagation(); setFavorites(prev => prev.includes(id) ? prev.filter(fId => fId !== id) : [...prev, id]); };
+ const toggleFavorite = (e: React.MouseEvent, id: number) => { 
+    e.stopPropagation(); 
+    setFavorites(prev => {
+      // 1. 计算最新的收藏数组
+      const newFavorites = prev.includes(id) ? prev.filter(fId => fId !== id) : [...prev, id];
+      
+      // 2. 同步保存到浏览器的 localStorage 中
+      try {
+        localStorage.setItem('tcode_favorites', JSON.stringify(newFavorites));
+      } catch (error) {
+        console.error('保存收藏数据失败:', error);
+      }
+      
+      return newFavorites;
+    }); 
+  };
   const toggleExpand = (id: number) => { const selection = window.getSelection(); if (selection && selection.toString().length > 0) return; setExpandedId(prev => prev === id ? null : id); };
 
-  const handleRelatedClick = (e: React.MouseEvent, targetCode: string) => {
+const handleRelatedClick = (e: React.MouseEvent, targetCode: string) => {
     e.stopPropagation();
     const isMaintained = maintainedCodes.includes(targetCode.toUpperCase());
     if (isMaintained) {
@@ -299,7 +362,8 @@ function TCodeDirectoryCore() {
       handleRoleChange('All Roles');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      const confirmLaunch = window.confirm(`暂未收录【${targetCode}】的详细操作指南。\n\n是否直接在 SAP 系统中打开该 T-code？`);
+      // 💡 在这里加上 Google 访问的提示
+      const confirmLaunch = window.confirm(`暂未收录【${targetCode}】的详细操作指南。\n\n是否直接在 SAP 系统中打开该 T-code？\n(💡 提示：如果需要直达 SAP，需要在 Google 上访问)`);
       if (confirmLaunch) {
         window.open(`https://ui5ce.volvo.com/sap/bc/gui/sap/its/webgui?~transaction=${targetCode}`, '_blank');
       }
@@ -314,15 +378,24 @@ function TCodeDirectoryCore() {
     <div className="p-8 pb-20">
       <div className="max-w-4xl mx-auto mt-8">
 
-        {/* 头部与过滤区 */}
-        <div className="flex justify-between items-end mb-8">
+     {/* 头部与过滤区 */}
+        <div className="flex flex-wrap gap-4 justify-between items-end mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">T-code 检索台</h1>
-            <p className="text-gray-500 text-sm">找到属于你角色的核心操作指南</p>
+            <div className="flex items-center gap-3 flex-wrap">
+              <p className="text-gray-500 text-sm">找到属于你角色的核心操作指南</p>
+              
+              {/* 🌟 新增：精美的环境要求提示标签 */}
+              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-50/80 text-blue-600 rounded-lg text-xs font-medium border border-blue-100/50">
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>使用直达 SAP 功能需基于 Google 浏览器</span>
+              </div>
+            </div>
           </div>
+          
           <button
             onClick={() => setIsTutorialOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-full font-medium transition-all shadow-sm hover:shadow-md border border-blue-100"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-full font-medium transition-all shadow-sm hover:shadow-md border border-blue-100 shrink-0"
           >
             <Lightbulb className="w-4 h-4 fill-blue-600" />
             使用秘籍
@@ -398,10 +471,49 @@ function TCodeDirectoryCore() {
         </div>
 
         {/* 🌟 AI 结果状态提示 (增强用户体验) */}
+     {/* ✅✅✅ 把 AI横幅和推荐模块 粘贴到这里（卡片列表的上方） ✅✅✅ */}
+        {/* 🌟 AI 结果状态与智能推荐区 (增强交互) */}
         {aiMatchedCodes !== null && (
-          <div className="mb-4 px-4 py-3 bg-blue-50 border border-blue-100 rounded-2xl flex items-center gap-3 text-sm text-blue-800 animate-[fadeIn_0.3s_ease-out]">
-            <div className="p-1.5 bg-blue-600 rounded-lg"><Sparkles className="w-4 h-4 text-white" /></div>
-            <p>基于 Qwen 大模型语义分析，为您找到以下 <b>{filteredTCodes.length}</b> 个高度相关的业务代码。</p>
+          <div className="mb-6 space-y-3">
+            {/* 提示横幅 */}
+            <div className="px-4 py-3 bg-blue-50 border border-blue-100 rounded-2xl flex items-center gap-3 text-sm text-blue-800 animate-[fadeIn_0.3s_ease-out]">
+              <div className="p-1.5 bg-blue-600 rounded-lg"><Sparkles className="w-4 h-4 text-white" /></div>
+              <p>基于 Qwen 大模型语义分析，为您找到以下 <b>{filteredTCodes.length}</b> 个高度相关的业务代码。</p>
+            </div>
+
+            {/* ✨ 新增：培训与资源智能推荐 */}
+            {suggestedLearning.length > 0 && (
+              <div className="bg-white border border-indigo-100 rounded-2xl p-4 shadow-sm animate-[fadeIn_0.4s_ease-out]">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-indigo-500" />
+                    <h3 className="text-sm font-bold text-indigo-900">💡 猜您需要相关的操作指南与 SOP</h3>
+                  </div>
+                  <Link href="/training" className="text-xs text-indigo-500 hover:text-indigo-700 flex items-center gap-1 font-medium">
+                    前往培训中心 <ArrowRight className="w-3 h-3" />
+                  </Link>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {suggestedLearning.map(doc => (
+                    <Link 
+                      key={doc.id} 
+                      href={`/training/${doc.id}`} 
+                      target="_blank" 
+                      className="flex items-start gap-3 p-3 rounded-xl hover:bg-indigo-50/60 border border-transparent hover:border-indigo-100 transition-all group"
+                    >
+                      <div className="p-2 bg-indigo-50 rounded-lg group-hover:bg-indigo-200 group-hover:text-indigo-700 transition-colors">
+                        {doc.type === 'video' ? <PlayCircle className="w-5 h-5 text-indigo-500" /> : <FileText className="w-5 h-5 text-indigo-500" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-indigo-700 transition-colors">{doc.title}</p>
+                        <p className="text-xs text-gray-500 truncate mt-0.5">{doc.module || '综合指南'} • {doc.type === 'video' ? '视频教程' : '文档指南'}</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -430,7 +542,7 @@ function TCodeDirectoryCore() {
             ))
           ) : paginatedTCodes.length > 0 ? (
             paginatedTCodes.map((tcode) => (
-              <div key={tcode.id} onClick={() => toggleExpand(tcode.id)} className={`bg-white border rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer hover:border-blue-300 hover:shadow-md ${expandedId === tcode.id ? 'ring-2 ring-blue-100 border-blue-200' : 'border-gray-200'}`}>
+            <div key={tcode.id} onClick={() => toggleExpand(tcode.id)} className={`bg-white border rounded-2xl relative transition-all duration-300 cursor-pointer hover:border-blue-300 hover:shadow-md hover:z-20 ${expandedId === tcode.id ? 'ring-2 ring-blue-100 border-blue-200 z-20' : 'border-gray-200 z-10'}`}>
                 <div className="p-5 flex items-center justify-between flex-wrap gap-4">
                   <div className="flex items-center gap-4">
                     <button onClick={(e) => toggleFavorite(e, tcode.id)} className={`transition-colors ${favorites.includes(tcode.id) ? 'text-yellow-400 hover:text-yellow-500' : 'text-gray-300 hover:text-yellow-400'}`}>
@@ -452,15 +564,26 @@ function TCodeDirectoryCore() {
                     </button>
 
                     {/* 2. Copy按钮：复制富文本卡片 */}
+                   {/* 2. Copy按钮：复制富文本卡片 */}
                     <button onClick={(e) => handleCopy(e, tcode)} className={`px-4 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2 font-medium ${copiedId === tcode.id ? 'bg-green-500 text-white shadow-sm' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-900 border border-gray-200'}`}>
                       {copiedId === tcode.id ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                       {copiedId === tcode.id ? '已复制' : '复制分享'}
                     </button>
 
-                    <button onClick={(e) => handleLaunchSAP(e, tcode.code)} className="px-4 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2 font-medium bg-[#005A9E] text-white hover:bg-[#004378] shadow-sm hover:shadow-md border border-transparent">
-                      <ExternalLink className="h-4 w-4" />
-                      直达 SAP
-                    </button>
+                    {/* 3. 🌟 修改这里：为「直达 SAP」按钮增加悬浮提示 */}
+                    <div className="relative group flex items-center">
+                      <button onClick={(e) => handleLaunchSAP(e, tcode.code)} className="px-4 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2 font-medium bg-[#005A9E] text-white hover:bg-[#004378] shadow-sm hover:shadow-md border border-transparent">
+                        <ExternalLink className="h-4 w-4" />
+                        直达 SAP
+                      </button>
+                      
+                      {/* CSS 驱动的极简 Tooltip */}
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-1.5 bg-slate-800 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap shadow-lg translate-y-1 group-hover:translate-y-0 z-50">
+                        如果需要直达 SAP，需要在 Google 上访问
+                        {/* 底部小三角 */}
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
+                      </div>
+                    </div>
 
                     <div className="text-gray-400 ml-1">
                       {expandedId === tcode.id ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
