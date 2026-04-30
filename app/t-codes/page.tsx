@@ -95,6 +95,25 @@ function TCodeDirectoryCore() {
   const [tutorialStep, setTutorialStep] = useState(0);
 
 
+  // 🌟 1. 预设你希望轮播的动态占位符数组
+const PLACEHOLDERS = [
+    "输入业务场景，例如：怎么创建采购订单？",
+    "反查 T-code 用途？直接输入 ME21N 或 MIGO 试试...",
+    "模糊查询业务，例如：发票校验、库存盘点、交货冻结...",
+    "寻找特定 SAP 报表？例如：查询物料凭证清单...",
+    "按系统模块搜索，例如输入：MM, FICO, SD..."
+  ];
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+
+  // 🌟 3. 使用 useEffect 设置定时器，每 3.5 秒切换一次
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setPlaceholderIndex((prevIndex) => (prevIndex + 1) % PLACEHOLDERS.length);
+    }, 3500); // 3500毫秒 = 3.5秒
+
+    // 清理定时器，防止内存泄漏
+    return () => clearInterval(intervalId);
+  }, []);
     // 🌟 组件挂载后，从本地存储读取收藏记录
   useEffect(() => {
     try {
@@ -412,7 +431,7 @@ const handleRelatedClick = (e: React.MouseEvent, targetCode: string) => {
               </div>
               <input
                 type="text"
-                placeholder="直接用大白话提问，例如：怎么批量把交货冻结期改了？"
+                placeholder={PLACEHOLDERS[placeholderIndex]}
                 value={searchTerm}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 onKeyDown={handleKeyDown}

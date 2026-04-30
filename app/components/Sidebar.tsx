@@ -2,14 +2,16 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Command, BookOpen, Globe, LifeBuoy, Home, Settings, User, Bell } from 'lucide-react';
+// 🌟 1. 引入了一个新的图标 Activity，用来表示系统状态/工单
+import { Command, BookOpen, Globe, LifeBuoy, Home, Settings, User, Bell, Activity } from 'lucide-react';
 
 const NAV_ITEMS = [
   { name: '首页大盘', href: '/', icon: Home },
   { name: 'T-code 速查', href: '/t-codes', icon: Command },
-  // { name: '快捷访问', href: '/gateway', icon: Globe },
   { name: '培训与指南', href: '/training', icon: BookOpen },
-  // { name: '用户支持', href: '/support', icon: LifeBuoy },
+  // 🌟 2. 在这里加上你的新页面路径和名称
+  { name: '系统Case记录', href: '/system-case', icon: Activity },
+  { name: '用户支持', href: '/support', icon: LifeBuoy },
 ];
 
 export default function Sidebar() {
@@ -31,8 +33,8 @@ export default function Sidebar() {
       {/* 核心导航菜单 */}
       <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
         <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 px-2">主菜单</div>
-      {NAV_ITEMS.map((item) => {
-          // 🌟 修复路由高亮：如果是首页就严格匹配，如果是其他菜单就用前缀匹配
+        {NAV_ITEMS.map((item) => {
+          // 🌟 路由高亮逻辑：已经是自动匹配前缀的了，/system-case 完美适用
           const isActive = item.href === '/' 
             ? pathname === '/' 
             : pathname.startsWith(item.href);
