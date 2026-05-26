@@ -11,7 +11,8 @@ const NAV_ITEMS = [
   { name: '培训与指南', href: '/training', icon: BookOpen },
   // 🌟 2. 在这里加上你的新页面路径和名称
   { name: '系统Case记录', href: '/system-case', icon: Activity },
-  { name: '用户支持', href: '/support', icon: LifeBuoy },
+  // { name: '用户支持', href: '/support', icon: LifeBuoy },
+  {name:'MDS 请求', href:'/mds-trigger', icon:Globe}
 ];
 
 export default function Sidebar() {
