@@ -52,6 +52,7 @@ export default function AdminDashboard() {
         body: JSON.stringify({
           recordId: record.id,
           partNumber: record.partNumber,
+          supplierCode: record.supplierCode,
           submitterEmail: record.submitterEmail,
           action: action,
           comment: '' // Approve 和 Complete 不需要 Comment
@@ -86,6 +87,7 @@ export default function AdminDashboard() {
           recordId: selectedRecord.id,
           partNumber: selectedRecord.partNumber,
           submitterEmail: selectedRecord.submitterEmail,
+          supplierCode: selectedRecord.supplierCode,
           action: 'Reject',
           comment: comment
         })

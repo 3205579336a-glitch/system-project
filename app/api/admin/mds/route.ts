@@ -30,7 +30,7 @@ export async function GET() {
 // 2. 处理管理员审批动作
 export async function POST(request: Request) {
   try {
-    const { recordId, partNumber, submitterEmail, action, comment } = await request.json();
+    const { recordId, partNumber, submitterEmail, action, comment,supplierCode } = await request.json();
 
     // 确定新的状态
     let newStatus = '';
@@ -66,6 +66,10 @@ export async function POST(request: Request) {
       { 
         questionId: "r2cf96687b47a4afe8d71946d0db9543b", // 提交人邮箱
         answer1: submitterEmail 
+      },
+      { 
+        questionId: "rc950a8096c324ced905135712a261831", // 供应商代码
+        answer1: supplierCode 
       },
       { 
         questionId: "r077975eefd3d41ff856583c753aeb281", // 批注 (Comment)

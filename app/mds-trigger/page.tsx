@@ -379,7 +379,7 @@ export default function MDSTriggerPage() {
                                         {(['request', 'cancel'] as const).map(tab => (
                                             <button key={tab} type="button" onClick={() => setActiveTab(tab)}
                                                 className={`flex-1 py-2.5 text-sm font-medium rounded-xl transition-all ${activeTab === tab ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-                                                {tab === 'request' ? 'Request' : 'Cancel'}
+                                                {tab === 'request' ? 'MDS Request' : 'MDS Cancel'}
                                             </button>
                                         ))}
                                     </div>
