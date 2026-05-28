@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Send, XCircle, Search, FileText, Info, AlertTriangle, CheckCircle2, Zap, ChevronRight, Upload, Download, Layers, X, TableProperties } from 'lucide-react';
 
 type RequestStatus = 'New' | 'Processing' | 'Done' | 'Rejected';
@@ -17,8 +17,28 @@ type MDSRecord = {
 type BulkRow = {
     partNumber: string;
     supplierCode: string;
-    action: 'request' | 'cancel';
     _error?: string;
+};
+
+type BulkSubmitResponse = {
+    success?: boolean;
+    error?: string;
+    count?: number;
+    records?: MDSRecord[];
+    duplicatePartNumbers?: string[];
+    duplicateRows?: Array<{ partNumber: string; supplierCode: string }>;
+};
+
+type SubmitResponse = {
+    success?: boolean;
+    error?: string;
+    duplicatePartNumbers?: string[];
+};
+
+type ValidationResponse = {
+    success?: boolean;
+    error?: string;
+    duplicateRows?: Array<{ partNumber: string; supplierCode: string; source: 'upload' | 'database' }>;
 };
 
 // ─── Tooltip ────────────────────────────────────────────────────────────────
@@ -67,6 +87,22 @@ function RuleCard({ icon, color, title, desc }: { icon: React.ReactNode; color: 
     );
 }
 
+function SummaryCard({ label, value, tone }: { label: string; value: string | number; tone: 'blue' | 'amber' | 'emerald' | 'slate' }) {
+    const toneMap = {
+        blue: 'bg-blue-50 text-blue-700 border-blue-100',
+        amber: 'bg-amber-50 text-amber-700 border-amber-100',
+        emerald: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+        slate: 'bg-slate-50 text-slate-700 border-slate-200',
+    } as const;
+
+    return (
+        <div className={`rounded-2xl border px-4 py-3 ${toneMap[tone]}`}>
+            <p className="text-[11px] font-semibold uppercase tracking-wider opacity-70">{label}</p>
+            <p className="mt-1 text-xl font-semibold tracking-tight">{value}</p>
+        </div>
+    );
+}
+
 // ─── Bulk Preview Table ───────────────────────────────────────────────────────
 function BulkPreviewTable({ rows, onRemove }: { rows: BulkRow[]; onRemove: (i: number) => void }) {
     if (rows.length === 0) return null;
@@ -85,7 +121,7 @@ function BulkPreviewTable({ rows, onRemove }: { rows: BulkRow[]; onRemove: (i: n
                 <table className="w-full text-left">
                     <thead className="sticky top-0 bg-white">
                         <tr className="border-b border-gray-50">
-                            {['物料号', '供应商', '操作', ''].map((h, i) => (
+                            {['物料号', '供应商', ''].map((h, i) => (
                                 <th key={i} className="px-4 py-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">{h}</th>
                             ))}
                         </tr>
@@ -97,14 +133,7 @@ function BulkPreviewTable({ rows, onRemove }: { rows: BulkRow[]; onRemove: (i: n
                                     {row.partNumber || <span className="text-red-400 italic">缺失</span>}
                                 </td>
                                 <td className="px-4 py-2 text-xs text-gray-600">
-                                    {row.supplierCode
-                                        ? row.supplierCode
-                                        : <span className="text-gray-400">—</span>}
-                                </td>
-                                <td className="px-4 py-2">
-                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ring-1 ${row.action === 'cancel' ? 'bg-red-50 text-red-500 ring-red-100' : 'bg-blue-50 text-blue-500 ring-blue-100'}`}>
-                                        {row.action === 'cancel' ? 'Cancel' : 'Request'}
-                                    </span>
+                                    {row.supplierCode || <span className="text-red-400 italic">缺失</span>}
                                 </td>
                                 <td className="px-4 py-2 text-right">
                                     {row._error
@@ -136,6 +165,7 @@ export default function MDSTriggerPage() {
 
     // Bulk state
     const [bulkRows, setBulkRows] = useState<BulkRow[]>([]);
+    const [isValidatingBulk, setIsValidatingBulk] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -183,8 +213,8 @@ export default function MDSTriggerPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ partNumber, supplierCode, action: activeTab, sessionId, email }),
             });
-            const data = await res.json();
-            if (!res.ok || !data.success) throw new Error('API Request Failed');
+            const data = (await res.json()) as SubmitResponse;
+            if (!res.ok || !data.success) throw new Error(data.error || 'API Request Failed');
 
             localStorage.setItem('mds_user_email', email);
             const newRecord: MDSRecord = {
@@ -198,8 +228,8 @@ export default function MDSTriggerPage() {
             showToast(`${activeTab === 'request' ? 'MDS Request' : 'Cancel 请求'} 已成功提交 — ${partNumber}`);
             setPartNumber('');
             setSupplierCode('');
-        } catch {
-            showToast('提交失败，请检查网络或后台服务', 'error');
+        } catch (error: unknown) {
+            showToast(error instanceof Error ? error.message : '提交失败，请检查网络或后台服务', 'error');
         } finally {
             setLoading(false);
         }
@@ -208,9 +238,10 @@ export default function MDSTriggerPage() {
     // ── CSV Template Download ──────────────────────────────────────────────────
     const downloadTemplate = () => {
         const csvContent = [
-            'partNumber,supplierCode,action',
-            '11045236,38532,request',
-            '11045237,,cancel',
+            'partNumber,supplierCode',
+            '11045236,38532',
+            '11045237,38532',
+            '22004501,41288',
         ].join('\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -222,28 +253,77 @@ export default function MDSTriggerPage() {
     };
 
     // ── CSV Parse ─────────────────────────────────────────────────────────────
+    const splitCSVLine = (line: string) => line
+        .split(',')
+        .map(c => c.trim().replace(/^"|"$/g, ''));
+
+    const pairKey = (row: Pick<BulkRow, 'partNumber' | 'supplierCode'>) => `${row.supplierCode}::${row.partNumber}`;
+
     const parseCSV = (text: string): BulkRow[] => {
         const lines = text.trim().split('\n').filter(l => l.trim());
         if (lines.length < 2) return [];
-        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        const headers = splitCSVLine(lines[0]).map(h => h.toLowerCase());
         const pnIdx = headers.indexOf('partnumber');
         const scIdx = headers.indexOf('suppliercode');
-        const acIdx = headers.indexOf('action');
+        const seen = new Set<string>();
 
         return lines.slice(1).map(line => {
-            const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+            const cols = splitCSVLine(line);
             const pn = pnIdx >= 0 ? cols[pnIdx] ?? '' : '';
             const sc = scIdx >= 0 ? cols[scIdx] ?? '' : '';
-            const ac = acIdx >= 0 ? (cols[acIdx] ?? '').toLowerCase() : 'request';
-            const action: 'request' | 'cancel' = ac === 'cancel' ? 'cancel' : 'request';
+            const key = `${sc}::${pn}`;
             let _error: string | undefined;
             if (!pn) _error = '物料号缺失';
-            else if (action === 'request' && !sc) _error = '供应商代码缺失';
-            return { partNumber: pn, supplierCode: sc, action, _error };
+            else if (!sc) _error = '供应商代码缺失';
+            else if (seen.has(key)) _error = '文件内重复 PARMA + Material';
+            if (pn && sc) seen.add(key);
+            return { partNumber: pn, supplierCode: sc, _error };
         });
     };
 
-    const handleFile = useCallback((file: File) => {
+    const validateBulkRows = async (rows: BulkRow[]) => {
+        const locallyValidRows = rows.filter(row => !row._error);
+        if (locallyValidRows.length === 0) return rows;
+
+        setIsValidatingBulk(true);
+        try {
+            const res = await fetch('/api/mds-request/validate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    rows: locallyValidRows.map(row => ({
+                        partNumber: row.partNumber,
+                        supplierCode: row.supplierCode,
+                    })),
+                    action: activeTab,
+                }),
+            });
+            const data = (await res.json()) as ValidationResponse;
+            if (!res.ok || !data.success) throw new Error(data.error || 'Duplicate validation failed');
+
+            const duplicateMap = new Map(
+                (data.duplicateRows || []).map(row => [
+                    `${row.supplierCode}::${row.partNumber}`,
+                    row.source === 'database'
+                        ? `数据库已有相同 ${activeTab === 'cancel' ? 'Cancel' : 'Request'} 操作`
+                        : '文件内重复 PARMA + Material',
+                ])
+            );
+
+            return rows.map(row => {
+                if (row._error) return row;
+                const duplicateError = duplicateMap.get(pairKey(row));
+                return duplicateError ? { ...row, _error: duplicateError } : row;
+            });
+        } catch (error: unknown) {
+            showToast(error instanceof Error ? error.message : '重复校验失败', 'error');
+            return rows;
+        } finally {
+            setIsValidatingBulk(false);
+        }
+    };
+
+    const handleFile = (file: File) => {
         if (!file.name.endsWith('.csv')) {
             showToast('请上传 .csv 格式文件', 'error');
             return;
@@ -253,17 +333,25 @@ export default function MDSTriggerPage() {
             const text = e.target?.result as string;
             const rows = parseCSV(text);
             setBulkRows(rows);
-            if (rows.length === 0) showToast('CSV 文件为空或格式有误', 'error');
+            if (rows.length === 0) {
+                showToast('CSV 文件为空或格式有误', 'error');
+                return;
+            }
+            validateBulkRows(rows).then(validatedRows => {
+                setBulkRows(validatedRows);
+                const duplicateCount = validatedRows.filter(row => row._error?.includes('数据库已有')).length;
+                if (duplicateCount > 0) showToast(`发现 ${duplicateCount} 条数据库重复记录`, 'error');
+            });
         };
         reader.readAsText(file, 'UTF-8');
-    }, []);
+    };
 
-    const handleDrop = useCallback((e: React.DragEvent) => {
+    const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
         setIsDragging(false);
         const file = e.dataTransfer.files[0];
         if (file) handleFile(file);
-    }, [handleFile]);
+    };
 
     // ── Bulk Submit ───────────────────────────────────────────────────────────
     const handleBulkSubmit = async (e: React.FormEvent) => {
@@ -277,31 +365,49 @@ export default function MDSTriggerPage() {
         setLoading(true);
         try {
             localStorage.setItem('mds_user_email', email);
-            let successCount = 0;
-            for (const row of validRows) {
-                const res = await fetch('/api/mds-request', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ partNumber: row.partNumber, supplierCode: row.supplierCode, action: row.action, sessionId, email }),
-                });
-                const data = await res.json();
-                if (res.ok && data.success) {
-                    successCount++;
-                    const newRecord: MDSRecord = {
-                        id: `${Date.now()}-${successCount}`,
+            const res = await fetch('/api/mds-request/bulk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    rows: validRows.map(row => ({
                         partNumber: row.partNumber,
-                        supplierCode: row.action === 'cancel' ? '—' : row.supplierCode,
-                        status: 'New',
-                        createdAt: new Date().toLocaleString('zh-CN', { hour12: false }).substring(0, 16).replace(/\//g, '-'),
-                    };
-                    setHistoryRecords(prev => [newRecord, ...prev]);
-                }
+                        supplierCode: row.supplierCode,
+                    })),
+                    action: activeTab,
+                    sessionId,
+                    email,
+                }),
+            });
+            const data = (await res.json()) as BulkSubmitResponse;
+            if (!res.ok || !data.success) {
+                const duplicateList = data.duplicatePartNumbers?.length
+                    ? `：${data.duplicatePartNumbers.slice(0, 8).join(', ')}${data.duplicatePartNumbers.length > 8 ? '...' : ''}`
+                    : '';
+                throw new Error(`${data.error || 'Bulk API Request Failed'}${duplicateList}`);
             }
-            showToast(`批量提交完成 — ${successCount}/${validRows.length} 条成功`);
+
+            const returnedRecords: MDSRecord[] = Array.isArray(data.records)
+                ? data.records.map(record => ({
+                    id: record.id,
+                    partNumber: record.partNumber,
+                    supplierCode: record.supplierCode,
+                    status: record.status,
+                    createdAt: record.createdAt,
+                }))
+                : validRows.map((row, index) => ({
+                    id: `${Date.now()}-${index}`,
+                    partNumber: row.partNumber,
+                    supplierCode: row.supplierCode,
+                    status: 'New' as RequestStatus,
+                    createdAt: new Date().toLocaleString('zh-CN', { hour12: false }).substring(0, 16).replace(/\//g, '-'),
+                }));
+
+            setHistoryRecords(prev => [...returnedRecords, ...prev]);
+            showToast(`批量提交完成 — ${data.count || validRows.length} 条已归入同一批次`);
             setBulkRows([]);
             if (fileInputRef.current) fileInputRef.current.value = '';
-        } catch {
-            showToast('批量提交过程中出现错误', 'error');
+        } catch (error: unknown) {
+            showToast(error instanceof Error ? error.message : '批量提交过程中出现错误', 'error');
         } finally {
             setLoading(false);
         }
@@ -314,6 +420,26 @@ export default function MDSTriggerPage() {
 
     const validBulkCount = bulkRows.filter(r => !r._error).length;
     const errorBulkCount = bulkRows.filter(r => !!r._error).length;
+    const newCount = historyRecords.filter(record => record.status === 'New').length;
+    const processingCount = historyRecords.filter(record => record.status === 'Processing').length;
+    const doneCount = historyRecords.filter(record => record.status === 'Done').length;
+
+    const handleActionTabChange = (tab: 'request' | 'cancel') => {
+        setActiveTab(tab);
+
+        if (submitMode !== 'bulk' || bulkRows.length === 0) return;
+
+        const rowsWithoutDatabaseErrors = bulkRows.map(row =>
+            row._error?.startsWith('数据库已有')
+                ? { ...row, _error: undefined }
+                : row
+        );
+
+        setBulkRows(rowsWithoutDatabaseErrors);
+        validateBulkRows(rowsWithoutDatabaseErrors).then(validatedRows => {
+            setBulkRows(validatedRows);
+        });
+    };
 
     // 原来的 filtered 下面接着加
     const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
@@ -326,7 +452,7 @@ export default function MDSTriggerPage() {
 
 
     return (
-        <div className="min-h-screen bg-[#F4F4F6] font-sans">
+        <div className="min-h-screen bg-[#F5F6F8] font-sans text-slate-900">
             {toast && (
                 <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl text-sm font-medium transition-all ${toast.type === 'success' ? 'bg-gray-950 text-white' : 'bg-red-600 text-white'}`}
                     style={{ animation: 'fadeSlideIn 0.25s ease' }}>
@@ -340,26 +466,28 @@ export default function MDSTriggerPage() {
         @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
       `}</style>
 
-            <div className="max-w-[1600px] mx-auto p-6 lg:p-10 flex flex-col gap-7">
+            <div className="max-w-[1600px] mx-auto p-5 lg:p-8 flex flex-col gap-6">
 
                 {/* ── Header ── */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-5 rounded-3xl border border-slate-200 bg-white px-6 py-5 shadow-[0_2px_16px_rgba(15,23,42,0.05)] lg:flex-row lg:items-center lg:justify-between">
                     <div>
                         <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">MDS Trigger</h1>
-                        <p className="text-sm text-gray-500 mt-0.5">Material Data Sheet 请求管理</p>
+                        <p className="text-sm text-gray-500 mt-1">Material Data Sheet 请求、取消与批量流转工作台</p>
                     </div>
-                    <span className="flex items-center gap-2 text-xs font-medium text-emerald-700 bg-emerald-50 px-3.5 py-2 rounded-full border border-emerald-200">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" style={{ animation: 'pulse-dot 2s ease-in-out infinite' }} />
-                        SAP Live
-                    </span>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[520px]">
+                        <SummaryCard label="Total" value={historyRecords.length} tone="slate" />
+                        <SummaryCard label="New" value={newCount} tone="blue" />
+                        <SummaryCard label="Processing" value={processingCount} tone="amber" />
+                        <SummaryCard label="Done" value={doneCount} tone="emerald" />
+                    </div>
                 </div>
 
                 {/* ── Top Grid ── */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
                     {/* Left: Form Panel */}
-                    <div className="lg:col-span-4 flex flex-col gap-5">
-                        <div className="bg-white rounded-3xl p-7 shadow-[0_2px_16px_rgba(0,0,0,0.06)] border border-gray-100">
+                    <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-5">
+                        <div className="bg-white rounded-3xl p-6 shadow-[0_2px_16px_rgba(15,23,42,0.06)] border border-slate-200">
 
                             {/* ── Submit Mode Toggle ── */}
                             <div className="flex bg-gray-100 p-1 rounded-2xl mb-5">
@@ -377,7 +505,7 @@ export default function MDSTriggerPage() {
                                     {/* Request / Cancel Tab */}
                                     <div className="flex bg-gray-100 p-1 rounded-2xl mb-7">
                                         {(['request', 'cancel'] as const).map(tab => (
-                                            <button key={tab} type="button" onClick={() => setActiveTab(tab)}
+                                            <button key={tab} type="button" onClick={() => handleActionTabChange(tab)}
                                                 className={`flex-1 py-2.5 text-sm font-medium rounded-xl transition-all ${activeTab === tab ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
                                                 {tab === 'request' ? 'MDS Request' : 'MDS Cancel'}
                                             </button>
@@ -449,6 +577,15 @@ export default function MDSTriggerPage() {
                             {/* ── Bulk Mode ── */}
                             {submitMode === 'bulk' && (
                                 <form onSubmit={handleBulkSubmit} className="space-y-5">
+                                    <div className="flex bg-gray-100 p-1 rounded-2xl">
+                                        {(['request', 'cancel'] as const).map(tab => (
+                                            <button key={tab} type="button" onClick={() => handleActionTabChange(tab)}
+                                                className={`flex-1 py-2.5 text-sm font-medium rounded-xl transition-all ${activeTab === tab ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                                                {tab === 'request' ? 'MDS Request' : 'MDS Cancel'}
+                                            </button>
+                                        ))}
+                                    </div>
+
                                     {/* Email */}
                                     <div>
                                         <label className="block text-[13px] font-medium text-gray-500 mb-2 ml-0.5">
@@ -470,7 +607,7 @@ export default function MDSTriggerPage() {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-xs font-semibold text-blue-900">CSV 模板</p>
-                                            <p className="text-[11px] text-blue-600 mt-0.5">包含 partNumber / supplierCode / action 列</p>
+                                            <p className="text-[11px] text-blue-600 mt-0.5">包含 partNumber / supplierCode，可混合多个 PARMA</p>
                                         </div>
                                         <button type="button" onClick={downloadTemplate}
                                             className="shrink-0 flex items-center gap-1.5 text-xs font-semibold text-blue-600 bg-white px-3 py-1.5 rounded-xl border border-blue-200 hover:bg-blue-50 transition-colors">
@@ -494,7 +631,7 @@ export default function MDSTriggerPage() {
                                                 <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center">
                                                     <CheckCircle2 size={18} className="text-emerald-500" />
                                                 </div>
-                                                <p className="text-sm font-semibold text-gray-800">文件已解析</p>
+                                                <p className="text-sm font-semibold text-gray-800">{isValidatingBulk ? '正在校验重复...' : '文件已解析并校验'}</p>
                                                 <p className="text-xs text-gray-500">
                                                     <span className="text-emerald-600 font-medium">{validBulkCount} 条有效</span>
                                                     {errorBulkCount > 0 && <><span className="mx-1 text-gray-300">·</span><span className="text-red-500 font-medium">{errorBulkCount} 条错误</span></>}
@@ -517,10 +654,10 @@ export default function MDSTriggerPage() {
 
                                     {/* Submit Button */}
                                     <div className="pt-2">
-                                        <button type="submit" disabled={loading || validBulkCount === 0}
+                                        <button type="submit" disabled={loading || isValidatingBulk || validBulkCount === 0}
                                             className="w-full px-6 py-3.5 rounded-2xl font-medium text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-50 bg-gray-950 text-white hover:bg-gray-800">
                                             <Layers size={15} />
-                                            {loading ? '批量提交中…' : `批量提交 ${validBulkCount > 0 ? `(${validBulkCount} 条)` : ''}`}
+                                            {loading ? '批量提交中…' : isValidatingBulk ? '重复校验中…' : `批量提交 ${validBulkCount > 0 ? `(${validBulkCount} 条)` : ''}`}
                                         </button>
                                     </div>
                                 </form>
@@ -528,7 +665,7 @@ export default function MDSTriggerPage() {
                         </div>
 
                         {/* Business Rules Card */}
-                        <div className="bg-white rounded-3xl p-6 shadow-[0_2px_16px_rgba(0,0,0,0.06)] border border-gray-100 space-y-3">
+                        <div className="bg-white rounded-3xl p-5 shadow-[0_2px_16px_rgba(15,23,42,0.05)] border border-slate-200 space-y-3">
                             <p className="text-[13px] font-semibold text-gray-400 uppercase tracking-wider mb-1">触发规则</p>
                             <RuleCard icon={<Info size={15} className="text-blue-500" />} color="bg-blue-50 border-blue-100 text-blue-900"
                                 title="Request — 需要 Info Record" desc="触发前，物料必须在 SAP 中存在有效的 Info Record (IR)，否则系统将拒绝该请求。" />
@@ -540,7 +677,7 @@ export default function MDSTriggerPage() {
                     </div>
 
                     {/* Right: Records Table */}
-                    <div className="lg:col-span-8 bg-white rounded-3xl p-8 shadow-[0_2px_16px_rgba(0,0,0,0.06)] border border-gray-100 flex flex-col h-fit">
+                    <div className="lg:col-span-7 xl:col-span-8 bg-white rounded-3xl p-6 shadow-[0_2px_16px_rgba(15,23,42,0.06)] border border-slate-200 flex flex-col min-h-[560px]">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
                                 <FileText size={18} className="text-gray-400" />
@@ -555,7 +692,7 @@ export default function MDSTriggerPage() {
                             </div>
                         </div>
 
-                        <div className="overflow-auto">
+                        <div className="overflow-auto flex-1">
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="border-b border-gray-100">
@@ -565,8 +702,18 @@ export default function MDSTriggerPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {paginated.length === 0 ? ( // 2. 修改这里：使用 paginated 判断和渲染
-                                        <tr><td colSpan={4} className="text-center py-14 text-gray-400 text-sm">暂无匹配记录</td></tr>
+                                    {paginated.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={4} className="py-20">
+                                                <div className="mx-auto flex max-w-sm flex-col items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center">
+                                                    <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-400 shadow-sm">
+                                                        <FileText size={20} />
+                                                    </div>
+                                                    <p className="text-sm font-semibold text-slate-700">暂无匹配记录</p>
+                                                    <p className="mt-1 text-xs leading-relaxed text-slate-400">提交 Request 或上传批量 CSV 后，记录会显示在这里。</p>
+                                                </div>
+                                            </td>
+                                        </tr>
                                     ) : paginated.map(record => ( // 修改这里：改为 paginated.map
                                         <tr key={record.id} className="border-b border-gray-50 last:border-none hover:bg-gray-50/70 transition-colors group">
                                             <td className="py-4 font-semibold text-gray-900 text-sm">{record.partNumber}</td>
@@ -627,15 +774,26 @@ export default function MDSTriggerPage() {
                 </div>
 
                 {/* ── Bottom: Power BI Dashboard ── */}
-                <div className="bg-white rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.06)] border border-gray-100 overflow-hidden" style={{ minHeight: 700 }}>
-                    <div className="px-7 py-4 border-b border-gray-100 flex justify-between items-center">
-                        <h2 className="text-base font-semibold text-gray-900">Global MDS Dashboard</h2>
-                        <span className="flex items-center gap-2 text-xs font-medium text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" style={{ animation: 'pulse-dot 2s ease-in-out infinite' }} />
-                            Live Data (SAP)
-                        </span>
+                <div className="bg-white rounded-3xl shadow-[0_2px_16px_rgba(15,23,42,0.06)] border border-slate-200 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-slate-100 flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
+                        <div>
+                            <h2 className="text-base font-semibold text-gray-900">Global MDS Dashboard</h2>
+                            <p className="mt-0.5 text-xs text-slate-400">Global queue overview and SAP processing status</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <a href="https://app.powerbi.com/reportEmbed?reportId=8bd98c42-d590-42d9-baff-b9a24ef143d8&autoAuth=true&ctid=f25493ae-1c98-41d7-8a33-0be75f5fe603"
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-xs font-semibold text-slate-600 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200 hover:bg-slate-100 transition-colors">
+                                Open Power BI
+                            </a>
+                            <span className="flex items-center gap-2 text-xs font-medium text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" style={{ animation: 'pulse-dot 2s ease-in-out infinite' }} />
+                                Live Data (SAP)
+                            </span>
+                        </div>
                     </div>
-                    <div className="relative" style={{ height: 660 }}>
+                    <div className="relative bg-slate-50" style={{ height: 560 }}>
                         <iframe title="Global MDS Power BI" className="absolute inset-0 w-full h-full border-none"
                             src="https://app.powerbi.com/reportEmbed?reportId=8bd98c42-d590-42d9-baff-b9a24ef143d8&autoAuth=true&ctid=f25493ae-1c98-41d7-8a33-0be75f5fe603"
                             allowFullScreen />

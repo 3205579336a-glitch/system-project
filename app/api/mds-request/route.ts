@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '../../../lib/supabase'; // 请根据你项目中 lib/supabase.ts 的实际路径调整导入
 
+type MDSRequestBody = {
+  partNumber?: unknown;
+  supplierCode?: unknown;
+  action?: unknown;
+  sessionId?: unknown;
+  email?: unknown;
+};
+
 // 1. 处理获取历史记录请求
 export async function GET(request: Request) {
   try {
@@ -39,10 +47,42 @@ export async function GET(request: Request) {
 // 2. 处理提交请求 (保存至 Supabase + 推送 Forms)
 export async function POST(request: Request) {
   try {
-    const { partNumber, supplierCode, action, sessionId,email } = await request.json();
+    const body = (await request.json()) as MDSRequestBody;
+    const partNumber = typeof body.partNumber === 'string' ? body.partNumber.trim() : '';
+    const supplierCode = typeof body.supplierCode === 'string' ? body.supplierCode.trim() : '';
+    const action = body.action === 'cancel' ? 'cancel' : 'request';
+    const sessionId = typeof body.sessionId === 'string' ? body.sessionId.trim() : '';
+    const email = typeof body.email === 'string' ? body.email.trim() : '';
 
     if (!sessionId) {
-      return NextResponse.json({ error: 'Missing sessionId' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Missing sessionId' }, { status: 400 });
+    }
+    if (!partNumber) {
+      return NextResponse.json({ success: false, error: 'Missing partNumber' }, { status: 400 });
+    }
+    if (!supplierCode) {
+      return NextResponse.json({ success: false, error: 'Missing supplierCode' }, { status: 400 });
+    }
+    if (!email) {
+      return NextResponse.json({ success: false, error: 'Missing email' }, { status: 400 });
+    }
+
+    const { data: duplicateRows, error: duplicateError } = await supabase
+      .from('mds_requests')
+      .select('id')
+      .eq('part_number', partNumber)
+      .eq('supplier_code', supplierCode)
+      .eq('action_type', action)
+      .limit(1);
+
+    if (duplicateError) throw duplicateError;
+
+    if (duplicateRows && duplicateRows.length > 0) {
+      return NextResponse.json({
+        success: false,
+        error: `重复提交：PARMA ${supplierCode} + Material ${partNumber} 已存在相同 ${action === 'cancel' ? 'Cancel' : 'Request'} 操作`,
+        duplicatePartNumbers: [partNumber],
+      }, { status: 409 });
     }
 
     // ── 环节 A：将数据持久化写入 Supabase 数据库 ──
@@ -51,7 +91,7 @@ export async function POST(request: Request) {
       .insert([
         {
           part_number: partNumber,
-          supplier_code: action === 'cancel' ? 'N/A' : supplierCode,
+          supplier_code: supplierCode,
           action_type: action,
           status: 'New', // 初始状态设为 New
           session_id: sessionId,
@@ -62,13 +102,20 @@ export async function POST(request: Request) {
 
     if (dbError) {
       console.error('Supabase 写入失败:', dbError);
+      if (dbError.code === '23505') {
+        return NextResponse.json({
+          success: false,
+          error: `重复提交：PARMA ${supplierCode} + Material ${partNumber} 已存在相同 ${action === 'cancel' ? 'Cancel' : 'Request'} 操作。若这是 Cancel 请求，请先在 Supabase 删除旧的 supplier/material 唯一索引并创建包含 action_type 的唯一索引。`,
+          duplicatePartNumbers: [partNumber],
+        }, { status: 409 });
+      }
       throw new Error('Database insert failed');
     }
 
     // ── 环节 B：推送至 Microsoft Forms ──
     const FORMS_SUBMIT_URL = "https://forms.office.com/formapi/api/f25493ae-1c98-41d7-8a33-0be75f5fe603/users/03e50a34-e0ea-4c54-ad8a-b1f6c26a7cc8/forms('rpNU8pgc10GKMwvnX1_mAzQK5QPq4FRMrYqx9sJqfMhUNzJDODBVREUwOUJSRE9IMkRCMjBBT1VYUS4u')/responses";
 
-    let formActionText = action === 'cancel' ? "Delete" : "Request";
+    const formActionText = action === 'cancel' ? "Delete" : "Request";
 
     const answersArray = [
       {
