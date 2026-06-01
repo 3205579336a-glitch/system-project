@@ -17,8 +17,35 @@ type BulkInputRow = {
   supplierCode: string;
 };
 
+type SavedDbRecord = {
+  id: string;
+  part_number: string;
+  supplier_code: string;
+  action_type: BulkAction;
+  status: 'New' | 'Processing' | 'Done' | 'Rejected';
+  created_at: string;
+  batch_id: string | null;
+};
+
 const FORMS_SUBMIT_URL =
   "https://forms.office.com/formapi/api/f25493ae-1c98-41d7-8a33-0be75f5fe603/users/03e50a34-e0ea-4c54-ad8a-b1f6c26a7cc8/forms('rpNU8pgc10GKMwvnX1_mAzQK5QPq4FRMrYqx9sJqfMhUNzJDODBVREUwOUJSRE9IMkRCMjBBT1VYUS4u')/responses";
+
+const isVolvoEmail = (value: string) => /^[A-Z0-9._%+-]+@volvo\.com$/i.test(value);
+
+const pairKey = (row: BulkInputRow) => `${row.supplierCode}::${row.partNumber}`;
+
+const formatCreatedAt = (value: string) =>
+  new Date(value).toLocaleString('zh-CN', { hour12: false }).substring(0, 16).replace(/\//g, '-');
+
+const formatRecord = (item: SavedDbRecord) => ({
+  id: item.id,
+  partNumber: item.part_number,
+  supplierCode: item.supplier_code,
+  actionType: item.action_type,
+  status: item.status,
+  batchId: item.batch_id,
+  createdAt: formatCreatedAt(item.created_at),
+});
 
 const normalizeRows = (body: BulkRequestBody): BulkInputRow[] => {
   if (Array.isArray(body.rows)) {
@@ -44,8 +71,6 @@ const normalizeRows = (body: BulkRequestBody): BulkInputRow[] => {
     .map(partNumber => ({ partNumber, supplierCode }));
 };
 
-const pairKey = (row: BulkInputRow) => `${row.supplierCode}::${row.partNumber}`;
-
 const findDuplicatePairs = (rows: BulkInputRow[]) => {
   const seen = new Set<string>();
   const duplicates = new Map<string, BulkInputRow>();
@@ -62,6 +87,45 @@ const findDuplicatePairs = (rows: BulkInputRow[]) => {
   return Array.from(duplicates.values());
 };
 
+const submitBatchToForms = async (rows: BulkInputRow[], action: BulkAction, email: string, createdAt: string) => {
+  const formActionText = action === 'cancel' ? 'Delete' : 'Request';
+  const materialLines = rows.map(row => row.partNumber);
+  const supplierLines = rows.map(row => row.supplierCode);
+  const answersArray = [
+    {
+      questionId: 'r3749d14481644f23a99c5338a500314c',
+      answer1: formActionText,
+    },
+    {
+      questionId: 're8bb47fc4eeb42e89c852f1d08316233',
+      answer1: materialLines.join('\n'),
+    },
+    {
+      questionId: 'rdbb086f5efb2404fb1b687ba41aaff64',
+      answer1: supplierLines.join('\n'),
+    },
+    {
+      questionId: 'rce020f288faf4a7d8851f6f9c1bd6386',
+      answer1: email,
+    },
+  ];
+
+  return fetch(FORMS_SUBMIT_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Origin: 'https://forms.office.com',
+      Referer: 'https://forms.office.com/',
+    },
+    body: JSON.stringify({
+      startDate: createdAt,
+      submitDate: new Date().toISOString(),
+      answers: JSON.stringify(answersArray),
+    }),
+  });
+};
+
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as BulkRequestBody;
@@ -75,6 +139,9 @@ export async function POST(request: Request) {
     }
     if (!email) {
       return NextResponse.json({ success: false, error: 'Missing email' }, { status: 400 });
+    }
+    if (!isVolvoEmail(email)) {
+      return NextResponse.json({ success: false, error: 'Email must be a @volvo.com address' }, { status: 400 });
     }
     if (rows.length === 0) {
       return NextResponse.json({ success: false, error: 'No valid PARMA/material rows' }, { status: 400 });
@@ -92,17 +159,18 @@ export async function POST(request: Request) {
 
     const partNumbers = Array.from(new Set(rows.map(row => row.partNumber)));
     const supplierCodes = Array.from(new Set(rows.map(row => row.supplierCode)));
+    const requestedKeys = new Set(rows.map(pairKey));
 
     const { data: existingRows, error: duplicateError } = await supabase
       .from('mds_requests')
       .select('part_number, supplier_code')
       .in('part_number', partNumbers)
       .in('supplier_code', supplierCodes)
-      .eq('action_type', action);
+      .eq('action_type', action)
+      .neq('status', 'Rejected');
 
     if (duplicateError) throw duplicateError;
 
-    const requestedKeys = new Set(rows.map(pairKey));
     const duplicateRows = (existingRows ?? [])
       .map(row => ({ partNumber: row.part_number, supplierCode: row.supplier_code }))
       .filter(row => requestedKeys.has(pairKey(row)));
@@ -118,79 +186,117 @@ export async function POST(request: Request) {
 
     const batchId = crypto.randomUUID();
     const createdAt = new Date().toISOString();
-    const dbRows = rows.map((row, index) => ({
+    const preparedRows = rows.map((row, index) => ({
+      ...row,
+      batchIndex: index + 1,
+      rejectedId: undefined as string | undefined,
+    }));
+
+    const toDbPayload = (row: BulkInputRow & { batchIndex: number }) => ({
       part_number: row.partNumber,
       supplier_code: row.supplierCode,
       action_type: action,
       status: 'New',
       session_id: sessionId,
       submitter_email: email,
+      admin_comment: null,
       batch_id: batchId,
       batch_size: rows.length,
-      batch_index: index + 1,
-    }));
-
-    const { data, error: dbError } = await supabase
-      .from('mds_requests')
-      .insert(dbRows)
-      .select('id, part_number, supplier_code, status, created_at, batch_id');
-
-    if (dbError) {
-      console.error('Supabase bulk insert failed:', dbError);
-      if (dbError.code === '23505') {
-        return NextResponse.json({
-          success: false,
-          error: '数据库唯一索引仍在拦截重复 PARMA + Material。请删除旧索引并创建包含 action_type 的唯一索引。',
-        }, { status: 409 });
-      }
-      throw new Error('Database insert failed');
-    }
-
-    const formActionText = action === 'cancel' ? 'Delete' : 'Request';
-    const materialLines = rows.map(row => row.partNumber);
-    const supplierLines = rows.map(row => row.supplierCode);
-    const answersArray = [
-      {
-        questionId: 'r3749d14481644f23a99c5338a500314c',
-        answer1: formActionText,
-      },
-      {
-        questionId: 're8bb47fc4eeb42e89c852f1d08316233',
-        answer1: materialLines.join('\n'),
-      },
-      {
-        questionId: 'rdbb086f5efb2404fb1b687ba41aaff64',
-        answer1: supplierLines.join('\n'),
-      },
-      {
-        questionId: 'rce020f288faf4a7d8851f6f9c1bd6386',
-        answer1: email,
-      },
-    ];
-
-    const response = await fetch(FORMS_SUBMIT_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        Origin: 'https://forms.office.com',
-        Referer: 'https://forms.office.com/',
-      },
-      body: JSON.stringify({
-        startDate: createdAt,
-        submitDate: new Date().toISOString(),
-        answers: JSON.stringify(answersArray),
-      }),
+      batch_index: row.batchIndex,
+      created_at: createdAt,
     });
 
-    const records = (data ?? []).map(item => ({
-      id: item.id,
-      partNumber: item.part_number,
-      supplierCode: item.supplier_code,
-      status: item.status,
-      batchId: item.batch_id,
-      createdAt: new Date(item.created_at).toLocaleString('zh-CN', { hour12: false }).substring(0, 16).replace(/\//g, '-'),
-    }));
+    const savedRecords: SavedDbRecord[] = [];
+    let reactivatedCount = 0;
+
+    const { data: insertedRecords, error: insertError } = await supabase
+      .from('mds_requests')
+      .insert(preparedRows.map(toDbPayload))
+      .select('id, part_number, supplier_code, action_type, status, created_at, batch_id');
+
+    if (insertError?.code === '23505') {
+      const { data: rejectedRows, error: rejectedError } = await supabase
+        .from('mds_requests')
+        .select('id, part_number, supplier_code')
+        .in('part_number', partNumbers)
+        .in('supplier_code', supplierCodes)
+        .eq('action_type', action)
+        .eq('status', 'Rejected')
+        .order('created_at', { ascending: false });
+
+      if (rejectedError) throw rejectedError;
+
+      const reusableRejectedIds = new Map<string, string>();
+      (rejectedRows ?? []).forEach(row => {
+        const key = pairKey({ partNumber: row.part_number, supplierCode: row.supplier_code });
+        if (requestedKeys.has(key) && !reusableRejectedIds.has(key)) {
+          reusableRejectedIds.set(key, row.id);
+        }
+      });
+
+      const fallbackRows = preparedRows.map(row => ({
+        ...row,
+        rejectedId: reusableRejectedIds.get(pairKey(row)),
+      }));
+      const insertPayload = fallbackRows
+        .filter(row => !row.rejectedId)
+        .map(toDbPayload);
+
+      if (insertPayload.length > 0) {
+        const { data, error: dbError } = await supabase
+          .from('mds_requests')
+          .insert(insertPayload)
+          .select('id, part_number, supplier_code, action_type, status, created_at, batch_id');
+
+        if (dbError) {
+          console.error('Supabase bulk fallback insert failed:', dbError);
+          return NextResponse.json({
+            success: false,
+            error: '数据库唯一索引仍在拦截批量记录。请确认 Supabase 已应用 allow_resubmit_after_rejected migration，并删除旧的 supplier/material 唯一索引。',
+          }, { status: 409 });
+        }
+
+        savedRecords.push(...((data ?? []) as SavedDbRecord[]));
+      }
+
+      const rowsToReactivate = fallbackRows.filter(row => row.rejectedId);
+      if (rowsToReactivate.length > 0) {
+        const updateResults = await Promise.all(rowsToReactivate.map(row =>
+          supabase
+            .from('mds_requests')
+            .update(toDbPayload(row))
+            .eq('id', row.rejectedId)
+            .select('id, part_number, supplier_code, action_type, status, created_at, batch_id')
+            .single()
+        ));
+
+        const updateError = updateResults.find(result => result.error)?.error;
+        if (updateError) {
+          console.error('Supabase bulk reactivation failed:', updateError);
+          throw new Error('Database reactivation failed');
+        }
+
+        savedRecords.push(...updateResults.map(result => result.data as SavedDbRecord));
+      }
+
+      reactivatedCount = rowsToReactivate.length;
+    } else if (insertError) {
+      console.error('Supabase bulk insert failed:', insertError);
+      throw new Error('Database insert failed');
+    } else {
+      savedRecords.push(...((insertedRecords ?? []) as SavedDbRecord[]));
+    }
+
+    const savedRecordByKey = new Map(savedRecords.map(record => [
+      pairKey({ partNumber: record.part_number, supplierCode: record.supplier_code }),
+      record,
+    ]));
+    const records = rows
+      .map(row => savedRecordByKey.get(pairKey(row)))
+      .filter((record): record is SavedDbRecord => Boolean(record))
+      .map(formatRecord);
+
+    const response = await submitBatchToForms(rows, action, email, createdAt);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -201,6 +307,7 @@ export async function POST(request: Request) {
         batchId,
         count: rows.length,
         records,
+        reactivatedCount,
       });
     }
 
@@ -210,6 +317,7 @@ export async function POST(request: Request) {
       batchId,
       count: rows.length,
       records,
+      reactivatedCount,
     });
   } catch (error) {
     console.error('MDS bulk API error:', error);

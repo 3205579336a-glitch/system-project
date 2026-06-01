@@ -27,6 +27,7 @@ export async function GET() {
       id: item.id,
       partNumber: item.part_number,
       supplierCode: item.supplier_code,
+      actionType: item.action_type || 'request',
       status: item.status,
       submitterEmail: item.submitter_email || '未知用户',
       adminComment: item.admin_comment,
@@ -63,11 +64,11 @@ export async function POST(request: Request) {
     let newStatus = '';
     if (action === 'Approve') newStatus = 'Processing';
     if (action === 'Complete') newStatus = 'Done';
-    if (action === 'Reject') newStatus = 'New'; // 退回至初始状态
+    if (action === 'Reject') newStatus = 'Rejected';
 
     const query = supabase
       .from('mds_requests')
-      .select('id, part_number, supplier_code, submitter_email, batch_id, batch_index');
+      .select('id, part_number, supplier_code, action_type, submitter_email, batch_id, batch_index');
 
     const { data: targetRows, error: fetchError } = batchId
       ? await query.eq('batch_id', batchId).order('batch_index', { ascending: true })

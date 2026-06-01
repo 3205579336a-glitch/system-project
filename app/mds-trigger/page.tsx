@@ -10,6 +10,7 @@ type MDSRecord = {
     id: string;
     partNumber: string;
     supplierCode: string;
+    actionType?: 'request' | 'cancel';
     status: RequestStatus;
     createdAt: string;
 };
@@ -32,6 +33,7 @@ type BulkSubmitResponse = {
 type SubmitResponse = {
     success?: boolean;
     error?: string;
+    record?: MDSRecord;
     duplicatePartNumbers?: string[];
 };
 
@@ -87,11 +89,12 @@ function RuleCard({ icon, color, title, desc }: { icon: React.ReactNode; color: 
     );
 }
 
-function SummaryCard({ label, value, tone }: { label: string; value: string | number; tone: 'blue' | 'amber' | 'emerald' | 'slate' }) {
+function SummaryCard({ label, value, tone }: { label: string; value: string | number; tone: 'blue' | 'amber' | 'emerald' | 'red' | 'slate' }) {
     const toneMap = {
         blue: 'bg-blue-50 text-blue-700 border-blue-100',
         amber: 'bg-amber-50 text-amber-700 border-amber-100',
         emerald: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+        red: 'bg-red-50 text-red-700 border-red-100',
         slate: 'bg-slate-50 text-slate-700 border-slate-200',
     } as const;
 
@@ -206,6 +209,10 @@ export default function MDSTriggerPage() {
     const handleSingleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!sessionId || !email) return;
+        if (!isVolvoEmail(email)) {
+            showToast('请使用 @volvo.com 邮箱提交', 'error');
+            return;
+        }
         setLoading(true);
         try {
             const res = await fetch('/api/mds-request', {
@@ -217,14 +224,15 @@ export default function MDSTriggerPage() {
             if (!res.ok || !data.success) throw new Error(data.error || 'API Request Failed');
 
             localStorage.setItem('mds_user_email', email);
-            const newRecord: MDSRecord = {
+            const newRecord: MDSRecord = data.record || {
                 id: Date.now().toString(),
                 partNumber,
                 supplierCode: supplierCode,
+                actionType: activeTab,
                 status: 'New',
                 createdAt: new Date().toLocaleString('zh-CN', { hour12: false }).substring(0, 16).replace(/\//g, '-'),
             };
-            setHistoryRecords(prev => [newRecord, ...prev]);
+            setHistoryRecords(prev => [newRecord, ...prev.filter(record => record.id !== newRecord.id)]);
             showToast(`${activeTab === 'request' ? 'MDS Request' : 'Cancel 请求'} 已成功提交 — ${partNumber}`);
             setPartNumber('');
             setSupplierCode('');
@@ -357,6 +365,10 @@ export default function MDSTriggerPage() {
     const handleBulkSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!sessionId || !email || bulkRows.length === 0) return;
+        if (!isVolvoEmail(email)) {
+            showToast('请使用 @volvo.com 邮箱提交', 'error');
+            return;
+        }
         const validRows = bulkRows.filter(r => !r._error);
         if (validRows.length === 0) {
             showToast('没有有效数据可提交', 'error');
@@ -391,6 +403,7 @@ export default function MDSTriggerPage() {
                     id: record.id,
                     partNumber: record.partNumber,
                     supplierCode: record.supplierCode,
+                    actionType: record.actionType,
                     status: record.status,
                     createdAt: record.createdAt,
                 }))
@@ -398,11 +411,13 @@ export default function MDSTriggerPage() {
                     id: `${Date.now()}-${index}`,
                     partNumber: row.partNumber,
                     supplierCode: row.supplierCode,
+                    actionType: activeTab,
                     status: 'New' as RequestStatus,
                     createdAt: new Date().toLocaleString('zh-CN', { hour12: false }).substring(0, 16).replace(/\//g, '-'),
                 }));
 
-            setHistoryRecords(prev => [...returnedRecords, ...prev]);
+            const returnedIds = new Set(returnedRecords.map(record => record.id));
+            setHistoryRecords(prev => [...returnedRecords, ...prev.filter(record => !returnedIds.has(record.id))]);
             showToast(`批量提交完成 — ${data.count || validRows.length} 条已归入同一批次`);
             setBulkRows([]);
             if (fileInputRef.current) fileInputRef.current.value = '';
@@ -423,6 +438,8 @@ export default function MDSTriggerPage() {
     const newCount = historyRecords.filter(record => record.status === 'New').length;
     const processingCount = historyRecords.filter(record => record.status === 'Processing').length;
     const doneCount = historyRecords.filter(record => record.status === 'Done').length;
+    const rejectedCount = historyRecords.filter(record => record.status === 'Rejected').length;
+    const isVolvoEmail = (value: string) => /^[A-Z0-9._%+-]+@volvo\.com$/i.test(value.trim());
 
     const handleActionTabChange = (tab: 'request' | 'cancel') => {
         setActiveTab(tab);
@@ -474,11 +491,12 @@ export default function MDSTriggerPage() {
                         <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">MDS Trigger</h1>
                         <p className="text-sm text-gray-500 mt-1">Material Data Sheet 请求、取消与批量流转工作台</p>
                     </div>
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[520px]">
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-5 lg:min-w-[640px]">
                         <SummaryCard label="Total" value={historyRecords.length} tone="slate" />
                         <SummaryCard label="New" value={newCount} tone="blue" />
                         <SummaryCard label="Processing" value={processingCount} tone="amber" />
                         <SummaryCard label="Done" value={doneCount} tone="emerald" />
+                        <SummaryCard label="Rejected" value={rejectedCount} tone="red" />
                     </div>
                 </div>
 
@@ -518,7 +536,7 @@ export default function MDSTriggerPage() {
                                                 你的邮箱 (Email)<span className="text-red-500 ml-0.5">*</span>
                                             </label>
                                             <div className="relative">
-                                                <input type="email" required value={email}
+                                                <input type="email" required pattern="^[A-Za-z0-9._%+-]+@volvo\.com$" title="请使用 @volvo.com 邮箱" value={email}
                                                     onChange={e => { setEmail(e.target.value); localStorage.setItem('mds_user_email', e.target.value); }}
                                                     className="w-full px-4 py-3 rounded-2xl bg-gray-50 ring-1 ring-gray-200 focus:ring-2 focus:ring-black outline-none text-gray-900 text-sm transition-all"
                                                     placeholder="e.g. xxx@volvo.com" />
@@ -592,7 +610,7 @@ export default function MDSTriggerPage() {
                                             你的邮箱 (Email)<span className="text-red-500 ml-0.5">*</span>
                                         </label>
                                         <div className="relative">
-                                            <input type="email" required value={email}
+                                            <input type="email" required pattern="^[A-Za-z0-9._%+-]+@volvo\.com$" title="请使用 @volvo.com 邮箱" value={email}
                                                 onChange={e => { setEmail(e.target.value); localStorage.setItem('mds_user_email', e.target.value); }}
                                                 className="w-full px-4 py-3 rounded-2xl bg-gray-50 ring-1 ring-gray-200 focus:ring-2 focus:ring-black outline-none text-gray-900 text-sm transition-all"
                                                 placeholder="e.g. xxx@volvo.com" />
@@ -696,15 +714,15 @@ export default function MDSTriggerPage() {
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="border-b border-gray-100">
-                                        {['物料号', '供应商', '触发时间', '状态'].map((h, i) => (
-                                            <th key={h} className={`pb-3 text-[12px] font-semibold text-gray-400 uppercase tracking-wider ${i === 3 ? 'text-right' : ''}`}>{h}</th>
+                                        {['物料号', '供应商', '类型', '触发时间', '状态'].map((h, i) => (
+                                            <th key={h} className={`pb-3 text-[12px] font-semibold text-gray-400 uppercase tracking-wider ${i === 4 ? 'text-right' : ''}`}>{h}</th>
                                         ))}
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {paginated.length === 0 ? (
                                         <tr>
-                                            <td colSpan={4} className="py-20">
+                                            <td colSpan={5} className="py-20">
                                                 <div className="mx-auto flex max-w-sm flex-col items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center">
                                                     <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-400 shadow-sm">
                                                         <FileText size={20} />
@@ -718,6 +736,7 @@ export default function MDSTriggerPage() {
                                         <tr key={record.id} className="border-b border-gray-50 last:border-none hover:bg-gray-50/70 transition-colors group">
                                             <td className="py-4 font-semibold text-gray-900 text-sm">{record.partNumber}</td>
                                             <td className="py-4 text-gray-600 text-sm">{record.supplierCode || '—'}</td>
+                                            <td className="py-4"><ActionBadge action={record.actionType || 'request'} /></td>
                                             <td className="py-4 text-gray-400 text-xs tabular-nums">{record.createdAt}</td>
                                             <td className="py-4 text-right"><StatusBadge status={record.status} /></td>
                                         </tr>
@@ -814,6 +833,19 @@ function StatusBadge({ status }: { status: RequestStatus }) {
     return (
         <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold ring-1 ${map[status]}`}>
             {status}
+        </span>
+    );
+}
+
+function ActionBadge({ action }: { action: 'request' | 'cancel' }) {
+    const map = {
+        request: 'bg-indigo-50 text-indigo-600 ring-indigo-100',
+        cancel: 'bg-rose-50 text-rose-600 ring-rose-100',
+    } as const;
+
+    return (
+        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold ring-1 ${map[action]}`}>
+            {action === 'request' ? 'Request' : 'Cancel'}
         </span>
     );
 }

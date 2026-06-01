@@ -62,7 +62,8 @@ export async function POST(request: Request) {
       .select('part_number, supplier_code')
       .in('part_number', partNumbers)
       .in('supplier_code', supplierCodes)
-      .eq('action_type', action);
+      .eq('action_type', action)
+      .neq('status', 'Rejected');
 
     if (error) throw error;
 
