@@ -9,7 +9,21 @@ type ValidationRow = {
 type ValidationBody = {
   rows?: unknown;
   action?: unknown;
+  language?: unknown;
 };
+
+const messages = {
+  zh: {
+    noRows: '没有可校验的有效 PARMA / Material 数据。',
+    internal: '重复校验暂时失败，请稍后重试。',
+  },
+  en: {
+    noRows: 'No valid PARMA / Material rows are available to validate.',
+    internal: 'Duplicate validation is temporarily unavailable. Please try again later.',
+  },
+} as const;
+
+const getLanguage = (value: unknown) => value === 'en' ? 'en' : 'zh';
 
 const normalizeRows = (rows: unknown): ValidationRow[] => {
   if (!Array.isArray(rows)) return [];
@@ -44,13 +58,17 @@ const findDuplicatePairs = (rows: ValidationRow[]) => {
 };
 
 export async function POST(request: Request) {
+  let responseLanguage: keyof typeof messages = 'zh';
   try {
     const body = (await request.json()) as ValidationBody;
     const rows = normalizeRows(body.rows);
     const action = body.action === 'cancel' ? 'cancel' : 'request';
+    const language = getLanguage(body.language);
+    responseLanguage = language;
+    const t = messages[language];
 
     if (rows.length === 0) {
-      return NextResponse.json({ success: false, error: 'No valid PARMA/material rows' }, { status: 400 });
+      return NextResponse.json({ success: false, error: t.noRows }, { status: 400 });
     }
 
     const duplicateInUpload = findDuplicatePairs(rows);
@@ -81,6 +99,6 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error('MDS validation API error:', error);
-    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ success: false, error: messages[responseLanguage].internal }, { status: 500 });
   }
 }

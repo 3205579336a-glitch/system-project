@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
 type BulkAction = 'request' | 'cancel';
+type RequestStatus = 'New' | 'Processing' | 'Done' | 'Rejected';
 
 type BulkRequestBody = {
   rows?: unknown;
@@ -10,6 +11,7 @@ type BulkRequestBody = {
   action?: unknown;
   sessionId?: unknown;
   email?: unknown;
+  language?: unknown;
 };
 
 type BulkInputRow = {
@@ -17,12 +19,17 @@ type BulkInputRow = {
   supplierCode: string;
 };
 
+type PreparedBulkRow = BulkInputRow & {
+  batchIndex: number;
+  rejectedId?: string;
+};
+
 type SavedDbRecord = {
   id: string;
   part_number: string;
   supplier_code: string;
   action_type: BulkAction;
-  status: 'New' | 'Processing' | 'Done' | 'Rejected';
+  status: RequestStatus;
   created_at: string;
   batch_id: string | null;
 };
@@ -31,8 +38,38 @@ const FORMS_SUBMIT_URL =
   "https://forms.office.com/formapi/api/f25493ae-1c98-41d7-8a33-0be75f5fe603/users/03e50a34-e0ea-4c54-ad8a-b1f6c26a7cc8/forms('rpNU8pgc10GKMwvnX1_mAzQK5QPq4FRMrYqx9sJqfMhUNzJDODBVREUwOUJSRE9IMkRCMjBBT1VYUS4u')/responses";
 
 const isVolvoEmail = (value: string) => /^[A-Z0-9._%+-]+@volvo\.com$/i.test(value);
-
 const pairKey = (row: BulkInputRow) => `${row.supplierCode}::${row.partNumber}`;
+
+const messages = {
+  zh: {
+    missingSession: '缺少会话信息，请刷新页面后重试。',
+    missingEmail: '请填写邮箱地址。',
+    invalidEmail: '请使用 @volvo.com 邮箱提交。',
+    noRows: '没有可提交的有效 PARMA / Material 数据。',
+    duplicateUpload: (pairs: string) => `批量文件内存在重复的 PARMA + Material：${pairs}`,
+    duplicateDatabase: (count: number, action: BulkAction) =>
+      `数据库中已有 ${count} 组相同 ${action === 'cancel' ? 'Cancel' : 'Request'} 的 PARMA + Material。`,
+    duplicateActive: '数据库中已存在相同 PARMA + Material 的未完成操作。',
+    savedButFormsFailed: '批量请求已保存，但未能同步至邮件通知流程。',
+    saved: '批量请求已保存并同步至邮件通知流程。',
+    internal: '系统暂时无法处理批量请求，请稍后重试。',
+  },
+  en: {
+    missingSession: 'Session information is missing. Please refresh the page and try again.',
+    missingEmail: 'Please enter your email address.',
+    invalidEmail: 'Please submit with a @volvo.com email address.',
+    noRows: 'No valid PARMA / Material rows are available to submit.',
+    duplicateUpload: (pairs: string) => `The batch file contains duplicate PARMA + Material pairs: ${pairs}`,
+    duplicateDatabase: (count: number, action: BulkAction) =>
+      `${count} PARMA + Material pair(s) already have the same ${action === 'cancel' ? 'Cancel' : 'Request'} operation in the database.`,
+    duplicateActive: 'The database already contains the same unfinished PARMA + Material operation.',
+    savedButFormsFailed: 'The batch request was saved, but the email notification flow could not be triggered.',
+    saved: 'The batch request was saved and synced to the email notification flow.',
+    internal: 'The system could not process the batch request. Please try again later.',
+  },
+} as const;
+
+const getLanguage = (value: unknown) => value === 'en' ? 'en' : 'zh';
 
 const formatCreatedAt = (value: string) =>
   new Date(value).toLocaleString('zh-CN', { hour12: false }).substring(0, 16).replace(/\//g, '-');
@@ -127,31 +164,36 @@ const submitBatchToForms = async (rows: BulkInputRow[], action: BulkAction, emai
 };
 
 export async function POST(request: Request) {
+  let responseLanguage: keyof typeof messages = 'zh';
   try {
     const body = (await request.json()) as BulkRequestBody;
     const rows = normalizeRows(body);
     const action: BulkAction = body.action === 'cancel' ? 'cancel' : 'request';
     const sessionId = typeof body.sessionId === 'string' ? body.sessionId.trim() : '';
     const email = typeof body.email === 'string' ? body.email.trim() : '';
+    const language = getLanguage(body.language);
+    responseLanguage = language;
+    const t = messages[language];
 
     if (!sessionId) {
-      return NextResponse.json({ success: false, error: 'Missing sessionId' }, { status: 400 });
+      return NextResponse.json({ success: false, error: t.missingSession }, { status: 400 });
     }
     if (!email) {
-      return NextResponse.json({ success: false, error: 'Missing email' }, { status: 400 });
+      return NextResponse.json({ success: false, error: t.missingEmail }, { status: 400 });
     }
     if (!isVolvoEmail(email)) {
-      return NextResponse.json({ success: false, error: 'Email must be a @volvo.com address' }, { status: 400 });
+      return NextResponse.json({ success: false, error: t.invalidEmail }, { status: 400 });
     }
     if (rows.length === 0) {
-      return NextResponse.json({ success: false, error: 'No valid PARMA/material rows' }, { status: 400 });
+      return NextResponse.json({ success: false, error: t.noRows }, { status: 400 });
     }
 
     const duplicateInBatch = findDuplicatePairs(rows);
     if (duplicateInBatch.length > 0) {
+      const duplicatePairs = duplicateInBatch.map(row => `${row.supplierCode}/${row.partNumber}`).join(', ');
       return NextResponse.json({
         success: false,
-        error: `批量文件内存在重复 PARMA + Material：${duplicateInBatch.map(row => `${row.supplierCode}/${row.partNumber}`).join(', ')}`,
+        error: t.duplicateUpload(duplicatePairs),
         duplicateRows: duplicateInBatch,
         duplicatePartNumbers: duplicateInBatch.map(row => row.partNumber),
       }, { status: 409 });
@@ -161,7 +203,7 @@ export async function POST(request: Request) {
     const supplierCodes = Array.from(new Set(rows.map(row => row.supplierCode)));
     const requestedKeys = new Set(rows.map(pairKey));
 
-    const { data: existingRows, error: duplicateError } = await supabase
+    const { data: activeRows, error: activeLookupError } = await supabase
       .from('mds_requests')
       .select('part_number, supplier_code')
       .in('part_number', partNumbers)
@@ -169,30 +211,49 @@ export async function POST(request: Request) {
       .eq('action_type', action)
       .neq('status', 'Rejected');
 
-    if (duplicateError) throw duplicateError;
+    if (activeLookupError) throw activeLookupError;
 
-    const duplicateRows = (existingRows ?? [])
+    const duplicateRows = (activeRows ?? [])
       .map(row => ({ partNumber: row.part_number, supplierCode: row.supplier_code }))
       .filter(row => requestedKeys.has(pairKey(row)));
 
     if (duplicateRows.length > 0) {
       return NextResponse.json({
         success: false,
-        error: `数据库中已有 ${duplicateRows.length} 组相同 ${action === 'cancel' ? 'Cancel' : 'Request'} 的 PARMA + Material`,
+        error: t.duplicateDatabase(duplicateRows.length, action),
         duplicateRows,
         duplicatePartNumbers: duplicateRows.map(row => row.partNumber),
       }, { status: 409 });
     }
 
+    const { data: rejectedRows, error: rejectedLookupError } = await supabase
+      .from('mds_requests')
+      .select('id, part_number, supplier_code')
+      .in('part_number', partNumbers)
+      .in('supplier_code', supplierCodes)
+      .eq('action_type', action)
+      .eq('status', 'Rejected')
+      .order('created_at', { ascending: false });
+
+    if (rejectedLookupError) throw rejectedLookupError;
+
+    const reusableRejectedIds = new Map<string, string>();
+    (rejectedRows ?? []).forEach(row => {
+      const key = pairKey({ partNumber: row.part_number, supplierCode: row.supplier_code });
+      if (requestedKeys.has(key) && !reusableRejectedIds.has(key)) {
+        reusableRejectedIds.set(key, row.id);
+      }
+    });
+
     const batchId = crypto.randomUUID();
     const createdAt = new Date().toISOString();
-    const preparedRows = rows.map((row, index) => ({
+    const preparedRows: PreparedBulkRow[] = rows.map((row, index) => ({
       ...row,
       batchIndex: index + 1,
-      rejectedId: undefined as string | undefined,
+      rejectedId: reusableRejectedIds.get(pairKey(row)),
     }));
 
-    const toDbPayload = (row: BulkInputRow & { batchIndex: number }) => ({
+    const toDbPayload = (row: PreparedBulkRow) => ({
       part_number: row.partNumber,
       supplier_code: row.supplierCode,
       action_type: action,
@@ -207,84 +268,47 @@ export async function POST(request: Request) {
     });
 
     const savedRecords: SavedDbRecord[] = [];
-    let reactivatedCount = 0;
+    const rowsToInsert = preparedRows.filter(row => !row.rejectedId);
+    const rowsToReactivate = preparedRows.filter(row => row.rejectedId);
 
-    const { data: insertedRecords, error: insertError } = await supabase
-      .from('mds_requests')
-      .insert(preparedRows.map(toDbPayload))
-      .select('id, part_number, supplier_code, action_type, status, created_at, batch_id');
-
-    if (insertError?.code === '23505') {
-      const { data: rejectedRows, error: rejectedError } = await supabase
+    if (rowsToInsert.length > 0) {
+      const { data, error: insertError } = await supabase
         .from('mds_requests')
-        .select('id, part_number, supplier_code')
-        .in('part_number', partNumbers)
-        .in('supplier_code', supplierCodes)
-        .eq('action_type', action)
-        .eq('status', 'Rejected')
-        .order('created_at', { ascending: false });
+        .insert(rowsToInsert.map(toDbPayload))
+        .select('id, part_number, supplier_code, action_type, status, created_at, batch_id');
 
-      if (rejectedError) throw rejectedError;
+      if (insertError?.code === '23505') {
+        console.error('Supabase bulk unique constraint blocked insert:', insertError);
+        return NextResponse.json({
+          success: false,
+          error: t.duplicateActive,
+        }, { status: 409 });
+      }
+      if (insertError) {
+        console.error('Supabase bulk insert failed:', insertError);
+        throw new Error('Database insert failed');
+      }
 
-      const reusableRejectedIds = new Map<string, string>();
-      (rejectedRows ?? []).forEach(row => {
-        const key = pairKey({ partNumber: row.part_number, supplierCode: row.supplier_code });
-        if (requestedKeys.has(key) && !reusableRejectedIds.has(key)) {
-          reusableRejectedIds.set(key, row.id);
-        }
-      });
+      savedRecords.push(...((data ?? []) as SavedDbRecord[]));
+    }
 
-      const fallbackRows = preparedRows.map(row => ({
-        ...row,
-        rejectedId: reusableRejectedIds.get(pairKey(row)),
-      }));
-      const insertPayload = fallbackRows
-        .filter(row => !row.rejectedId)
-        .map(toDbPayload);
-
-      if (insertPayload.length > 0) {
-        const { data, error: dbError } = await supabase
+    if (rowsToReactivate.length > 0) {
+      const updateResults = await Promise.all(rowsToReactivate.map(row =>
+        supabase
           .from('mds_requests')
-          .insert(insertPayload)
-          .select('id, part_number, supplier_code, action_type, status, created_at, batch_id');
+          .update(toDbPayload(row))
+          .eq('id', row.rejectedId)
+          .select('id, part_number, supplier_code, action_type, status, created_at, batch_id')
+          .single()
+      ));
 
-        if (dbError) {
-          console.error('Supabase bulk fallback insert failed:', dbError);
-          return NextResponse.json({
-            success: false,
-            error: '数据库唯一索引仍在拦截批量记录。请确认 Supabase 已应用 allow_resubmit_after_rejected migration，并删除旧的 supplier/material 唯一索引。',
-          }, { status: 409 });
-        }
-
-        savedRecords.push(...((data ?? []) as SavedDbRecord[]));
+      const updateError = updateResults.find(result => result.error)?.error;
+      if (updateError) {
+        console.error('Supabase bulk reactivation failed:', updateError);
+        throw new Error('Database reactivation failed');
       }
 
-      const rowsToReactivate = fallbackRows.filter(row => row.rejectedId);
-      if (rowsToReactivate.length > 0) {
-        const updateResults = await Promise.all(rowsToReactivate.map(row =>
-          supabase
-            .from('mds_requests')
-            .update(toDbPayload(row))
-            .eq('id', row.rejectedId)
-            .select('id, part_number, supplier_code, action_type, status, created_at, batch_id')
-            .single()
-        ));
-
-        const updateError = updateResults.find(result => result.error)?.error;
-        if (updateError) {
-          console.error('Supabase bulk reactivation failed:', updateError);
-          throw new Error('Database reactivation failed');
-        }
-
-        savedRecords.push(...updateResults.map(result => result.data as SavedDbRecord));
-      }
-
-      reactivatedCount = rowsToReactivate.length;
-    } else if (insertError) {
-      console.error('Supabase bulk insert failed:', insertError);
-      throw new Error('Database insert failed');
-    } else {
-      savedRecords.push(...((insertedRecords ?? []) as SavedDbRecord[]));
+      savedRecords.push(...updateResults.map(result => result.data as SavedDbRecord));
     }
 
     const savedRecordByKey = new Map(savedRecords.map(record => [
@@ -303,24 +327,24 @@ export async function POST(request: Request) {
       console.error('Bulk Forms submit failed:', errorText);
       return NextResponse.json({
         success: true,
-        warning: 'Saved to local but failed to sync batch to Forms',
+        warning: t.savedButFormsFailed,
         batchId,
         count: rows.length,
         records,
-        reactivatedCount,
+        reactivatedCount: rowsToReactivate.length,
       });
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Batch saved and synced to Microsoft Forms',
+      message: t.saved,
       batchId,
       count: rows.length,
       records,
-      reactivatedCount,
+      reactivatedCount: rowsToReactivate.length,
     });
   } catch (error) {
     console.error('MDS bulk API error:', error);
-    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ success: false, error: messages[responseLanguage].internal }, { status: 500 });
   }
 }

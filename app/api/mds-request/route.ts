@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '../../../lib/supabase';
 
 type MDSAction = 'request' | 'cancel';
+type RequestStatus = 'New' | 'Processing' | 'Done' | 'Rejected';
 
 type MDSRequestBody = {
   partNumber?: unknown;
@@ -9,6 +10,7 @@ type MDSRequestBody = {
   action?: unknown;
   sessionId?: unknown;
   email?: unknown;
+  language?: unknown;
 };
 
 type MDSDbRecord = {
@@ -16,7 +18,7 @@ type MDSDbRecord = {
   part_number: string;
   supplier_code: string;
   action_type: MDSAction;
-  status: 'New' | 'Processing' | 'Done' | 'Rejected';
+  status: RequestStatus;
   created_at: string;
 };
 
@@ -24,6 +26,37 @@ const FORMS_SUBMIT_URL =
   "https://forms.office.com/formapi/api/f25493ae-1c98-41d7-8a33-0be75f5fe603/users/03e50a34-e0ea-4c54-ad8a-b1f6c26a7cc8/forms('rpNU8pgc10GKMwvnX1_mAzQK5QPq4FRMrYqx9sJqfMhUNzJDODBVREUwOUJSRE9IMkRCMjBBT1VYUS4u')/responses";
 
 const isVolvoEmail = (value: string) => /^[A-Z0-9._%+-]+@volvo\.com$/i.test(value);
+
+const messages = {
+  zh: {
+    missingSession: '缺少会话信息，请刷新页面后重试。',
+    missingPart: '请填写物料号。',
+    missingSupplier: '请填写供应商代码。',
+    missingEmail: '请填写邮箱地址。',
+    invalidEmail: '请使用 @volvo.com 邮箱提交。',
+    duplicate: (supplierCode: string, partNumber: string, action: MDSAction) =>
+      `重复提交：PARMA ${supplierCode} + Material ${partNumber} 已存在相同 ${action === 'cancel' ? 'Cancel' : 'Request'} 操作。`,
+    savedButFormsFailed: '请求已保存，但未能同步至邮件通知流程。',
+    saved: 'MDS 请求已保存并同步至邮件通知流程。',
+    internal: '系统暂时无法处理请求，请稍后重试。',
+    fetchFailed: '无法获取历史记录，请稍后重试。',
+  },
+  en: {
+    missingSession: 'Session information is missing. Please refresh the page and try again.',
+    missingPart: 'Please enter a part number.',
+    missingSupplier: 'Please enter a supplier code.',
+    missingEmail: 'Please enter your email address.',
+    invalidEmail: 'Please submit with a @volvo.com email address.',
+    duplicate: (supplierCode: string, partNumber: string, action: MDSAction) =>
+      `Duplicate submission: PARMA ${supplierCode} + Material ${partNumber} already has the same ${action === 'cancel' ? 'Cancel' : 'Request'} operation.`,
+    savedButFormsFailed: 'The request was saved, but the email notification flow could not be triggered.',
+    saved: 'The MDS request was saved and synced to the email notification flow.',
+    internal: 'The system could not process the request. Please try again later.',
+    fetchFailed: 'Could not load request history. Please try again later.',
+  },
+} as const;
+
+const getLanguage = (value: unknown) => value === 'en' ? 'en' : 'zh';
 
 const formatCreatedAt = (value: string) =>
   new Date(value).toLocaleString('zh-CN', { hour12: false }).substring(0, 16).replace(/\//g, '-');
@@ -92,15 +125,15 @@ export async function GET(request: Request) {
     if (error) throw error;
 
     const formattedRecords = (data ?? []).map(item => formatRecord(item as MDSDbRecord));
-
     return NextResponse.json({ success: true, records: formattedRecords });
   } catch (error) {
     console.error('Fetch MDS history error:', error);
-    return NextResponse.json({ success: false, error: 'Failed to fetch data' }, { status: 500 });
+    return NextResponse.json({ success: false, error: messages.zh.fetchFailed }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
+  let responseLanguage: keyof typeof messages = 'zh';
   try {
     const body = (await request.json()) as MDSRequestBody;
     const partNumber = typeof body.partNumber === 'string' ? body.partNumber.trim() : '';
@@ -108,24 +141,27 @@ export async function POST(request: Request) {
     const action: MDSAction = body.action === 'cancel' ? 'cancel' : 'request';
     const sessionId = typeof body.sessionId === 'string' ? body.sessionId.trim() : '';
     const email = typeof body.email === 'string' ? body.email.trim() : '';
+    const language = getLanguage(body.language);
+    responseLanguage = language;
+    const t = messages[language];
 
     if (!sessionId) {
-      return NextResponse.json({ success: false, error: 'Missing sessionId' }, { status: 400 });
+      return NextResponse.json({ success: false, error: t.missingSession }, { status: 400 });
     }
     if (!partNumber) {
-      return NextResponse.json({ success: false, error: 'Missing partNumber' }, { status: 400 });
+      return NextResponse.json({ success: false, error: t.missingPart }, { status: 400 });
     }
     if (!supplierCode) {
-      return NextResponse.json({ success: false, error: 'Missing supplierCode' }, { status: 400 });
+      return NextResponse.json({ success: false, error: t.missingSupplier }, { status: 400 });
     }
     if (!email) {
-      return NextResponse.json({ success: false, error: 'Missing email' }, { status: 400 });
+      return NextResponse.json({ success: false, error: t.missingEmail }, { status: 400 });
     }
     if (!isVolvoEmail(email)) {
-      return NextResponse.json({ success: false, error: 'Email must be a @volvo.com address' }, { status: 400 });
+      return NextResponse.json({ success: false, error: t.invalidEmail }, { status: 400 });
     }
 
-    const { data: duplicateRows, error: duplicateError } = await supabase
+    const { data: activeRows, error: activeLookupError } = await supabase
       .from('mds_requests')
       .select('id')
       .eq('part_number', partNumber)
@@ -134,12 +170,12 @@ export async function POST(request: Request) {
       .neq('status', 'Rejected')
       .limit(1);
 
-    if (duplicateError) throw duplicateError;
+    if (activeLookupError) throw activeLookupError;
 
-    if (duplicateRows && duplicateRows.length > 0) {
+    if (activeRows && activeRows.length > 0) {
       return NextResponse.json({
         success: false,
-        error: `重复提交：PARMA ${supplierCode} + Material ${partNumber} 已存在相同 ${action === 'cancel' ? 'Cancel' : 'Request'} 操作`,
+        error: t.duplicate(supplierCode, partNumber, action),
         duplicatePartNumbers: [partNumber],
       }, { status: 409 });
     }
@@ -159,37 +195,23 @@ export async function POST(request: Request) {
       created_at: createdAt,
     };
 
-    let reactivated = false;
-    let savedRecord: MDSDbRecord | null = null;
-    const { data: insertedRecord, error: insertError } = await supabase
+    const { data: rejectedRows, error: rejectedLookupError } = await supabase
       .from('mds_requests')
-      .insert([payload])
-      .select('id, part_number, supplier_code, action_type, status, created_at')
-      .single();
+      .select('id')
+      .eq('part_number', partNumber)
+      .eq('supplier_code', supplierCode)
+      .eq('action_type', action)
+      .eq('status', 'Rejected')
+      .order('created_at', { ascending: false })
+      .limit(1);
 
-    if (insertError?.code === '23505') {
-      const { data: rejectedRows, error: rejectedError } = await supabase
-        .from('mds_requests')
-        .select('id')
-        .eq('part_number', partNumber)
-        .eq('supplier_code', supplierCode)
-        .eq('action_type', action)
-        .eq('status', 'Rejected')
-        .order('created_at', { ascending: false })
-        .limit(1);
+    if (rejectedLookupError) throw rejectedLookupError;
 
-      if (rejectedError) throw rejectedError;
+    const rejectedId = rejectedRows?.[0]?.id as string | undefined;
+    let savedRecord: MDSDbRecord | null = null;
+    let reactivated = false;
 
-      const rejectedId = rejectedRows?.[0]?.id as string | undefined;
-      if (!rejectedId) {
-        console.error('Supabase write failed:', insertError);
-        return NextResponse.json({
-          success: false,
-          error: '数据库唯一索引仍在拦截这条记录。请确认 Supabase 已应用 allow_resubmit_after_rejected migration，并删除旧的 supplier/material 唯一索引。',
-          duplicatePartNumbers: [partNumber],
-        }, { status: 409 });
-      }
-
+    if (rejectedId) {
       const { data: updatedRecord, error: updateError } = await supabase
         .from('mds_requests')
         .update(payload)
@@ -202,12 +224,28 @@ export async function POST(request: Request) {
         throw new Error('Database reactivation failed');
       }
 
-      reactivated = true;
       savedRecord = updatedRecord as MDSDbRecord;
-    } else if (insertError) {
-      console.error('Supabase write failed:', insertError);
-      throw new Error('Database write failed');
+      reactivated = true;
     } else {
+      const { data: insertedRecord, error: insertError } = await supabase
+        .from('mds_requests')
+        .insert([payload])
+        .select('id, part_number, supplier_code, action_type, status, created_at')
+        .single();
+
+      if (insertError?.code === '23505') {
+        console.error('Supabase unique constraint blocked insert:', insertError);
+        return NextResponse.json({
+          success: false,
+          error: t.duplicate(supplierCode, partNumber, action),
+          duplicatePartNumbers: [partNumber],
+        }, { status: 409 });
+      }
+      if (insertError) {
+        console.error('Supabase write failed:', insertError);
+        throw new Error('Database write failed');
+      }
+
       savedRecord = insertedRecord as MDSDbRecord;
     }
 
@@ -219,22 +257,20 @@ export async function POST(request: Request) {
       console.error('Forms submit failed:', errorText);
       return NextResponse.json({
         success: true,
-        warning: 'Saved to local but failed to sync to Forms',
+        warning: t.savedButFormsFailed,
         record,
+        reactivated,
       });
     }
 
     return NextResponse.json({
       success: true,
-      message: 'MDS request saved and synced to Microsoft Forms',
+      message: t.saved,
       record,
       reactivated,
     });
   } catch (error) {
     console.error('MDS API Error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal Server Error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: messages[responseLanguage].internal }, { status: 500 });
   }
 }
