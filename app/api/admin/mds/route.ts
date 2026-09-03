@@ -85,6 +85,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Target records not found' }, { status: 404 });
     }
 
+    const actionTypes = Array.from(new Set(
+      targetRows.map(row => row.action_type || 'request'),
+    ));
+    if (actionTypes.length !== 1 || !['request', 'cancel'].includes(actionTypes[0])) {
+      return NextResponse.json(
+        { success: false, error: 'Target records contain inconsistent action types' },
+        { status: 409 },
+      );
+    }
+    const formActionType = actionTypes[0] === 'cancel' ? 'Cancel' : 'Request';
+
     const targetIds = targetRows.map(row => row.id);
     const { error: dbError } = await supabase
       .from('mds_requests')
@@ -120,6 +131,10 @@ export async function POST(request: Request) {
       {
         questionId: 'r077975eefd3d41ff856583c753aeb281',
         answer1: comment || 'None',
+      },
+      {
+        questionId: 'r69f0881aeef54ec992d04a592036f8ae',
+        answer1: formActionType,
       },
     ];
 
