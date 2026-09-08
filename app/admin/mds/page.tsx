@@ -238,7 +238,7 @@ export default function AdminDashboard() {
 
   const fetchRecords = async (options?: { silent?: boolean }) => {
     const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 12000);
+    const timeoutId = window.setTimeout(() => controller.abort(), 30000);
     if (!options?.silent) {
       setLoading(true);
       setLoadError("");

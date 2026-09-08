@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { fetchAllPages } from '@/lib/pagination';
 
 type AdminAction = 'Approve' | 'Complete' | 'Reject';
 
@@ -24,14 +25,14 @@ const isAdminAction = (value: unknown): value is AdminAction =>
 
 export async function GET() {
   try {
-    const { data, error } = await supabase
+    const data = await fetchAllPages((from, to) => supabase
       .from('mds_requests')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .select('id, part_number, supplier_code, action_type, status, submitter_email, admin_comment, batch_id, batch_size, batch_index, created_at')
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
+      .range(from, to));
 
-    if (error) throw error;
-
-    const formattedRecords = (data ?? []).map(item => ({
+    const formattedRecords = data.map(item => ({
       id: item.id,
       partNumber: item.part_number,
       supplierCode: item.supplier_code,
