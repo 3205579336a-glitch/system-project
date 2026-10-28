@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { isVolvoEmail, MDS_EMAIL_PATTERN } from "@/lib/mds-email";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -76,7 +77,7 @@ const copy = {
     singleSubmit: "单条提交",
     bulkUpload: "批量上传",
     email: "你的邮箱 (Email)",
-    emailTitle: "请使用 @volvo.com 邮箱",
+    emailTitle: "请使用 @volvo.com 或 @consultant.volvo.com 邮箱",
     partNumber: "物料号 (Part Number)",
     supplierCode: "供应商代码 (Supplier Code)",
     required: "*",
@@ -134,7 +135,7 @@ const copy = {
     dashboardSubtitle: "Global 队列总览与 SAP 处理状态",
     openPowerBi: "打开 Power BI",
     liveData: "Live Data (SAP)",
-    useVolvoEmail: "请使用 @volvo.com 邮箱提交",
+    useVolvoEmail: "请使用 @volvo.com 或 @consultant.volvo.com 邮箱提交",
     submitSuccess: "已成功提交",
     requestSubmitted: "Request 已成功提交",
     cancelSubmitted: "Cancel 已成功提交",
@@ -175,7 +176,7 @@ const copy = {
     singleSubmit: "Single",
     bulkUpload: "Batch Upload",
     email: "Email",
-    emailTitle: "Please use a @volvo.com email address",
+    emailTitle: "Please use a @volvo.com or @consultant.volvo.com email address",
     partNumber: "Part Number",
     supplierCode: "Supplier Code",
     required: "*",
@@ -233,7 +234,7 @@ const copy = {
     dashboardSubtitle: "Global queue overview and SAP processing status",
     openPowerBi: "Open Power BI",
     liveData: "Live Data (SAP)",
-    useVolvoEmail: "Please submit with a @volvo.com email address",
+    useVolvoEmail: "Please submit with a @volvo.com or @consultant.volvo.com email address",
     submitSuccess: "submitted successfully",
     requestSubmitted: "Request submitted successfully",
     cancelSubmitted: "Cancel submitted successfully",
@@ -407,7 +408,6 @@ export default function MDSTriggerPage() {
 
   const t = copy[language];
   const pageSize = 8;
-  const isVolvoEmail = (value: string) => /^[A-Z0-9._%+-]+@volvo\.com$/i.test(value.trim());
 
   const showToast = (msg: string, type: "success" | "error" = "success") => {
     setToast({ msg, type });
@@ -1109,7 +1109,7 @@ function EmailField({
         <input
           type="email"
           required
-          pattern="^[A-Za-z0-9._%+-]+@volvo\.com$"
+          pattern={MDS_EMAIL_PATTERN}
           title={t.emailTitle}
           value={email}
           onChange={event => {

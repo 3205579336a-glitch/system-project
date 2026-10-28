@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '../../../lib/supabase';
+import { isVolvoEmail } from '@/lib/mds-email';
 
 type MDSAction = 'request' | 'cancel';
 type RequestStatus = 'New' | 'Processing' | 'Done' | 'Rejected';
@@ -25,7 +26,6 @@ type MDSDbRecord = {
 const FORMS_SUBMIT_URL =
   "https://forms.office.com/formapi/api/f25493ae-1c98-41d7-8a33-0be75f5fe603/users/03e50a34-e0ea-4c54-ad8a-b1f6c26a7cc8/forms('rpNU8pgc10GKMwvnX1_mAzQK5QPq4FRMrYqx9sJqfMhUNzJDODBVREUwOUJSRE9IMkRCMjBBT1VYUS4u')/responses";
 
-const isVolvoEmail = (value: string) => /^[A-Z0-9._%+-]+@volvo\.com$/i.test(value);
 
 const messages = {
   zh: {
@@ -33,7 +33,7 @@ const messages = {
     missingPart: '请填写物料号。',
     missingSupplier: '请填写供应商代码。',
     missingEmail: '请填写邮箱地址。',
-    invalidEmail: '请使用 @volvo.com 邮箱提交。',
+    invalidEmail: '请使用 @volvo.com 或 @consultant.volvo.com 邮箱提交。',
     duplicate: (supplierCode: string, partNumber: string, action: MDSAction) =>
       `重复提交：PARMA ${supplierCode} + Material ${partNumber} 已存在相同 ${action === 'cancel' ? 'Cancel' : 'Request'} 操作。`,
     savedButFormsFailed: '请求已保存，但未能同步至邮件通知流程。',
@@ -46,7 +46,7 @@ const messages = {
     missingPart: 'Please enter a part number.',
     missingSupplier: 'Please enter a supplier code.',
     missingEmail: 'Please enter your email address.',
-    invalidEmail: 'Please submit with a @volvo.com email address.',
+    invalidEmail: 'Please submit with a @volvo.com or @consultant.volvo.com email address.',
     duplicate: (supplierCode: string, partNumber: string, action: MDSAction) =>
       `Duplicate submission: PARMA ${supplierCode} + Material ${partNumber} already has the same ${action === 'cancel' ? 'Cancel' : 'Request'} operation.`,
     savedButFormsFailed: 'The request was saved, but the email notification flow could not be triggered.',

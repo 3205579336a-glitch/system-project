@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { isVolvoEmail } from '@/lib/mds-email';
 
 type BulkAction = 'request' | 'cancel';
 type RequestStatus = 'New' | 'Processing' | 'Done' | 'Rejected';
@@ -37,14 +38,13 @@ type SavedDbRecord = {
 const FORMS_SUBMIT_URL =
   "https://forms.office.com/formapi/api/f25493ae-1c98-41d7-8a33-0be75f5fe603/users/03e50a34-e0ea-4c54-ad8a-b1f6c26a7cc8/forms('rpNU8pgc10GKMwvnX1_mAzQK5QPq4FRMrYqx9sJqfMhUNzJDODBVREUwOUJSRE9IMkRCMjBBT1VYUS4u')/responses";
 
-const isVolvoEmail = (value: string) => /^[A-Z0-9._%+-]+@volvo\.com$/i.test(value);
 const pairKey = (row: BulkInputRow) => `${row.supplierCode}::${row.partNumber}`;
 
 const messages = {
   zh: {
     missingSession: '缺少会话信息，请刷新页面后重试。',
     missingEmail: '请填写邮箱地址。',
-    invalidEmail: '请使用 @volvo.com 邮箱提交。',
+    invalidEmail: '请使用 @volvo.com 或 @consultant.volvo.com 邮箱提交。',
     noRows: '没有可提交的有效 PARMA / Material 数据。',
     duplicateUpload: (pairs: string) => `批量文件内存在重复的 PARMA + Material：${pairs}`,
     duplicateDatabase: (count: number, action: BulkAction) =>
@@ -57,7 +57,7 @@ const messages = {
   en: {
     missingSession: 'Session information is missing. Please refresh the page and try again.',
     missingEmail: 'Please enter your email address.',
-    invalidEmail: 'Please submit with a @volvo.com email address.',
+    invalidEmail: 'Please submit with a @volvo.com or @consultant.volvo.com email address.',
     noRows: 'No valid PARMA / Material rows are available to submit.',
     duplicateUpload: (pairs: string) => `The batch file contains duplicate PARMA + Material pairs: ${pairs}`,
     duplicateDatabase: (count: number, action: BulkAction) =>
